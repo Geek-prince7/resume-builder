@@ -1,0 +1,89 @@
+const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
+
+const experienceSchema = new mongoose.Schema({
+  company: { type: String, required: true },
+  role: { type: String, required: true },
+  location: String,
+  startDate: { type: Date, required: true },
+  endDate: Date,
+  current: { type: Boolean, default: false },
+  description: String,
+  highlights: [String],
+});
+
+const educationSchema = new mongoose.Schema({
+  institution: { type: String, required: true },
+  degree: { type: String, required: true },
+  field: String,
+  startDate: Date,
+  endDate: Date,
+  grade: String,
+  description: String,
+});
+
+const skillSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  level: {
+    type: String,
+    enum: ['beginner', 'intermediate', 'advanced', 'expert'],
+    default: 'intermediate',
+  },
+  category: String,
+});
+
+const certificationSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  issuer: String,
+  date: Date,
+  url: String,
+});
+
+const projectSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  description: String,
+  url: String,
+  technologies: [String],
+});
+
+const languageSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  proficiency: {
+    type: String,
+    enum: ['elementary', 'limited_working', 'professional_working', 'full_professional', 'native'],
+    default: 'professional_working',
+  },
+});
+
+const userSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: String,
+      default: uuidv4,
+      unique: true,
+      index: true,
+    },
+    name: { type: String, required: true },
+    email: { type: String, required: true },
+    phone: String,
+    totalExperience: {
+      years: { type: Number, default: 0 },
+      months: { type: Number, default: 0 },
+    },
+    linkedinUrl: String,
+    githubUrl: String,
+    behanceUrl: String,
+    portfolioUrl: String,
+    summary: String,
+    experiences: [experienceSchema],
+    education: [educationSchema],
+    skills: [skillSchema],
+    certifications: [certificationSchema],
+    projects: [projectSchema],
+    languages: [languageSchema],
+    achievements: [String],
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model('User', userSchema);
