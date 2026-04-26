@@ -3,27 +3,24 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useUser } from '../context/UserContext';
 import { getUser, getJobDescriptions } from '../api';
+import AdSlot from '../components/AdSlot';
 
 export default function Dashboard() {
-  const { userId } = useUser();
+  const { user: authUser } = useUser();
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [jds, setJds] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-    Promise.all([getUser(userId), getJobDescriptions(userId)])
+    Promise.all([getUser(), getJobDescriptions()])
       .then(([userRes, jdRes]) => {
-        setUser(userRes.data);
+        setProfile(userRes.data);
         setJds(jdRes.data);
       })
       .catch(() => toast.error('Failed to load data'))
       .finally(() => setLoading(false));
-  }, [userId]);
+  }, []);
 
   if (loading) {
     return (
@@ -33,32 +30,14 @@ export default function Dashboard() {
     );
   }
 
-  if (!userId) {
-    return (
-      <div className="text-center py-20">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Welcome to ResumeAI</h1>
-        <p className="text-gray-600 mb-8 max-w-md mx-auto">
-          Build tailored resumes powered by AI. Start by creating your profile with your
-          professional details.
-        </p>
-        <Link
-          to="/profile"
-          className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          Create Your Profile
-        </Link>
-      </div>
-    );
-  }
-
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back, {user?.name || 'User'}
+            Welcome back, {profile?.name || authUser?.name || 'User'}
           </h1>
-          <p className="text-gray-500 mt-1">{user?.email}</p>
+          <p className="text-gray-500 mt-1">{profile?.email}</p>
         </div>
         <div className="flex gap-3">
           <Link
@@ -76,27 +55,33 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {user && (
+      {profile && (
         <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Profile Summary</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
               <span className="text-gray-500">Experience:</span>{' '}
               <span className="font-medium">
-                {user.totalExperience?.years || 0}y {user.totalExperience?.months || 0}m
+                {profile.totalExperience?.years || 0}y {profile.totalExperience?.months || 0}m
               </span>
             </div>
             <div>
               <span className="text-gray-500">Skills:</span>{' '}
-              <span className="font-medium">{user.skills?.length || 0} listed</span>
+              <span className="font-medium">{profile.skills?.length || 0} listed</span>
             </div>
             <div>
               <span className="text-gray-500">Experiences:</span>{' '}
-              <span className="font-medium">{user.experiences?.length || 0} positions</span>
+              <span className="font-medium">{profile.experiences?.length || 0} positions</span>
             </div>
           </div>
         </div>
       )}
+
+      <AdSlot
+        slot={import.meta.env.VITE_ADSENSE_SLOT_DASHBOARD}
+        className="bg-white rounded-lg border border-gray-200 p-2 mb-8"
+        minHeight={120}
+      />
 
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Past Job Descriptions</h2>

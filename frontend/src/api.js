@@ -1,32 +1,49 @@
 import axios from 'axios';
 
-const api = axios.create({
-  baseURL: '/api',
+const api = axios.create({ baseURL: '/api' });
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
-export const createUser = (data) => api.post('/users', data);
-export const getUser = (userId) => api.get(`/users/${userId}`);
-export const updateUser = (userId, data) => api.put(`/users/${userId}`, data);
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(err);
+  }
+);
 
-export const parseResume = (userId, file) => {
+export const signup = (data) => api.post('/auth/signup', data);
+export const login = (data) => api.post('/auth/login', data);
+export const googleAuth = (credential) => api.post('/auth/google', { credential });
+export const getMe = () => api.get('/auth/me');
+
+export const getUser = () => api.get('/users/profile');
+export const updateUser = (data) => api.put('/users/profile', data);
+export const parseResume = (file) => {
   const formData = new FormData();
   formData.append('resume', file);
-  return api.post(`/users/${userId}/parse-resume`, formData, {
+  return api.post('/users/profile/parse-resume', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 };
 
-export const createJobDescription = (userId, data) =>
-  api.post(`/users/${userId}/job-descriptions`, data);
-
-export const getJobDescriptions = (userId) =>
-  api.get(`/users/${userId}/job-descriptions`);
-
-export const getJobDescription = (userId, jdId) =>
-  api.get(`/users/${userId}/job-descriptions/${jdId}`);
-
-export const generateResume = (userId, jdId, templateId) =>
-  api.post(`/users/${userId}/job-descriptions/${jdId}/generate`, { templateId });
+export const createJobDescription = (data) => api.post('/job-descriptions', data);
+export const getJobDescriptions = () => api.get('/job-descriptions');
+export const getJobDescription = (jdId) => api.get(`/job-descriptions/${jdId}`);
+export const generateResume = (jdId, templateId) =>
+  api.post(`/job-descriptions/${jdId}/generate`, { templateId });
 
 export const getTemplates = () => api.get('/templates');
 

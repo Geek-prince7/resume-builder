@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useUser } from '../context/UserContext';
-import { createUser, getUser, updateUser, parseResume } from '../api';
+import { getUser, updateUser, parseResume } from '../api';
 
 const emptyExperience = {
   company: '', role: '', location: '', startDate: '', endDate: '', current: false, description: '', highlights: [''],
@@ -12,13 +12,13 @@ const emptyEducation = {
 const emptySkill = { name: '', level: 'intermediate', category: '' };
 
 export default function Profile() {
-  const { userId, setUserId } = useUser();
-  const [loading, setLoading] = useState(false);
+  const { refreshUser } = useUser();
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [parsing, setParsing] = useState(false);
 
   const [form, setForm] = useState({
-    name: '', email: '', phone: '',
+    name: '', phone: '',
     totalExperience: { years: 0, months: 0 },
     linkedinUrl: '', githubUrl: '', behanceUrl: '', portfolioUrl: '',
     summary: '',
@@ -32,13 +32,11 @@ export default function Profile() {
   });
 
   useEffect(() => {
-    if (!userId) return;
-    setLoading(true);
-    getUser(userId)
+    getUser()
       .then((res) => {
         const u = res.data;
         setForm({
-          name: u.name || '', email: u.email || '', phone: u.phone || '',
+          name: u.name || '', phone: u.phone || '',
           totalExperience: u.totalExperience || { years: 0, months: 0 },
           linkedinUrl: u.linkedinUrl || '', githubUrl: u.githubUrl || '',
           behanceUrl: u.behanceUrl || '', portfolioUrl: u.portfolioUrl || '',
@@ -54,14 +52,14 @@ export default function Profile() {
       })
       .catch(() => toast.error('Failed to load profile'))
       .finally(() => setLoading(false));
-  }, [userId]);
+  }, []);
 
   const setField = (field, value) => setForm((f) => ({ ...f, [field]: value }));
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.email) {
-      toast.error('Name and email are required');
+    if (!form.name) {
+      toast.error('Name is required');
       return;
     }
     setSaving(true);
@@ -70,14 +68,9 @@ export default function Profile() {
         ...form,
         achievements: form.achievements.filter((a) => a.trim()),
       };
-      if (userId) {
-        await updateUser(userId, payload);
-        toast.success('Profile updated');
-      } else {
-        const res = await createUser(payload);
-        setUserId(res.data.userId);
-        toast.success('Profile created');
-      }
+      const res = await updateUser(payload);
+      refreshUser(res.data);
+      toast.success('Profile updated');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to save');
     } finally {
@@ -87,13 +80,13 @@ export default function Profile() {
 
   const handleParseResume = async (e) => {
     const file = e.target.files?.[0];
-    if (!file || !userId) return;
+    if (!file) return;
     setParsing(true);
     try {
-      const res = await parseResume(userId, file);
+      const res = await parseResume(file);
       const u = res.data.user;
       setForm({
-        name: u.name || form.name, email: u.email || form.email, phone: u.phone || form.phone,
+        name: u.name || form.name, phone: u.phone || form.phone,
         totalExperience: u.totalExperience || form.totalExperience,
         linkedinUrl: u.linkedinUrl || form.linkedinUrl, githubUrl: u.githubUrl || form.githubUrl,
         behanceUrl: u.behanceUrl || form.behanceUrl, portfolioUrl: u.portfolioUrl || form.portfolioUrl,
@@ -106,6 +99,7 @@ export default function Profile() {
         languages: u.languages?.length ? u.languages : form.languages,
         achievements: u.achievements?.length ? u.achievements : form.achievements,
       });
+      refreshUser(u);
       toast.success('Resume parsed and profile updated!');
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to parse resume');
@@ -141,30 +135,24 @@ export default function Profile() {
   return (
     <div className="max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
-          {userId ? 'Edit Profile' : 'Create Profile'}
-        </h1>
-        {userId && (
-          <label className="cursor-pointer px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-            {parsing ? 'Parsing...' : 'Upload & Parse Resume'}
-            <input
-              type="file"
-              accept=".pdf,.docx"
-              onChange={handleParseResume}
-              className="hidden"
-              disabled={parsing}
-            />
-          </label>
-        )}
+        <h1 className="text-2xl font-bold text-gray-900">Edit Profile</h1>
+        <label className="cursor-pointer px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+          {parsing ? 'Parsing...' : 'Upload & Parse Resume'}
+          <input
+            type="file"
+            accept=".pdf,.docx"
+            onChange={handleParseResume}
+            className="hidden"
+            disabled={parsing}
+          />
+        </label>
       </div>
 
       <form onSubmit={handleSave} className="space-y-8">
-        {/* Personal Info */}
         <section className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input label="Full Name *" value={form.name} onChange={(v) => setField('name', v)} />
-            <Input label="Email *" type="email" value={form.email} onChange={(v) => setField('email', v)} />
             <Input label="Phone" value={form.phone} onChange={(v) => setField('phone', v)} />
             <div className="flex gap-3">
               <Input label="Exp Years" type="number" value={form.totalExperience.years}
@@ -175,7 +163,6 @@ export default function Profile() {
           </div>
         </section>
 
-        {/* Links */}
         <section className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Links & Profiles</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -186,7 +173,6 @@ export default function Profile() {
           </div>
         </section>
 
-        {/* Summary */}
         <section className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Professional Summary</h2>
           <textarea
@@ -198,7 +184,6 @@ export default function Profile() {
           />
         </section>
 
-        {/* Experiences */}
         <section className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Work Experience</h2>
@@ -241,7 +226,6 @@ export default function Profile() {
           ))}
         </section>
 
-        {/* Education */}
         <section className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Education</h2>
@@ -269,7 +253,6 @@ export default function Profile() {
           ))}
         </section>
 
-        {/* Skills */}
         <section className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Skills</h2>
@@ -298,7 +281,6 @@ export default function Profile() {
           ))}
         </section>
 
-        {/* Achievements */}
         <section className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Achievements</h2>
           {form.achievements.map((ach, i) => (
@@ -323,7 +305,7 @@ export default function Profile() {
         <div className="flex justify-end">
           <button type="submit" disabled={saving}
             className="px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50">
-            {saving ? 'Saving...' : userId ? 'Update Profile' : 'Create Profile'}
+            {saving ? 'Saving...' : 'Update Profile'}
           </button>
         </div>
       </form>

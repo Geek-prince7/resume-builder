@@ -80,5 +80,4 @@ class GenerateRequest(BaseModel):
 
 class GenerateResponse(BaseModel):
     content: dict
-    html_content: str
     score: int

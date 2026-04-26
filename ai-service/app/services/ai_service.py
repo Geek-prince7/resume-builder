@@ -1,7 +1,16 @@
 import os
 import json
+import random
+import time
+import logging
 
 AI_PROVIDER = os.getenv("AI_PROVIDER", "openai")  # "openai" or "gemini"
+LOGGER = logging.getLogger(__name__)
+LLM_RETRY_ATTEMPTS = int(os.getenv("LLM_RETRY_ATTEMPTS", "3"))
+LLM_RETRY_BASE_DELAY_MS = int(os.getenv("LLM_RETRY_BASE_DELAY_MS", "250"))
+LLM_RETRY_MAX_DELAY_MS = int(os.getenv("LLM_RETRY_MAX_DELAY_MS", "3000"))
+LLM_RETRY_JITTER_MS = int(os.getenv("LLM_RETRY_JITTER_MS", "300"))
+LLM_REQUEST_TIMEOUT_SECONDS = float(os.getenv("LLM_REQUEST_TIMEOUT_SECONDS", "45"))
 
 PARSE_SYSTEM_PROMPT = """You are an expert resume parser. Extract structured data from the resume text provided.
 Return a JSON object with these fields (omit fields if not found):
@@ -128,6 +137,7 @@ def _openai_call(system_prompt: str, user_prompt: str, temperature: float) -> di
         ],
         temperature=temperature,
         response_format={"type": "json_object"},
+        timeout=LLM_REQUEST_TIMEOUT_SECONDS,
     )
     return json.loads(response.choices[0].message.content)
 
@@ -165,12 +175,31 @@ def _gemini_call(system_prompt: str, user_prompt: str, temperature: float) -> di
 # Unified interface
 # ---------------------------------------------------------------------------
 
+def _retry_with_jitter(task):
+    last_error = None
+    for attempt in range(LLM_RETRY_ATTEMPTS + 1):
+        try:
+            return task()
+        except Exception as exc:
+            last_error = exc
+            if attempt >= LLM_RETRY_ATTEMPTS:
+                raise
+            exp_backoff = min(LLM_RETRY_MAX_DELAY_MS, LLM_RETRY_BASE_DELAY_MS * (2**attempt))
+            jitter = random.randint(0, LLM_RETRY_JITTER_MS)
+            sleep_ms = exp_backoff + jitter
+            LOGGER.warning(
+                "LLM call failed, retrying",
+                extra={"attempt": attempt + 1, "sleep_ms": sleep_ms, "error": str(exc)},
+            )
+            time.sleep(sleep_ms / 1000.0)
+    raise last_error
+
 def _call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.2) -> dict:
     provider = AI_PROVIDER.lower()
     if provider == "gemini":
-        return _gemini_call(system_prompt, user_prompt, temperature)
+        return _retry_with_jitter(lambda: _gemini_call(system_prompt, user_prompt, temperature))
     elif provider == "openai":
-        return _openai_call(system_prompt, user_prompt, temperature)
+        return _retry_with_jitter(lambda: _openai_call(system_prompt, user_prompt, temperature))
     else:
         raise ValueError(f"Unknown AI_PROVIDER: '{provider}'. Use 'openai' or 'gemini'.")
 

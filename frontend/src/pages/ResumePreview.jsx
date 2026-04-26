@@ -1,51 +1,44 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useReactToPrint } from 'react-to-print';
 import toast from 'react-hot-toast';
-import { useUser } from '../context/UserContext';
 import { getJobDescription } from '../api';
+import ResumeDocument from '../components/templates/ResumeDocument';
+import AdSlot from '../components/AdSlot';
 
 export default function ResumePreview() {
   const { jdId } = useParams();
-  const { userId } = useUser();
   const [jd, setJd] = useState(null);
   const [activeIdx, setActiveIdx] = useState(0);
   const [loading, setLoading] = useState(true);
-  const iframeRef = useRef(null);
+  const resumeRef = useRef(null);
+
+  const sanitize = (value, fallback) =>
+    (value || fallback)
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') || fallback;
+
+  const pdfFileName = [
+    sanitize(jd?.generatedResumes?.[activeIdx]?.content?.name, 'username'),
+    sanitize(jd?.role, 'position'),
+    sanitize(jd?.company, 'company'),
+  ].join('_');
+
+  const handlePrint = useReactToPrint({
+    contentRef: resumeRef,
+    documentTitle: pdfFileName,
+  });
 
   useEffect(() => {
-    if (!userId || !jdId) return;
-    getJobDescription(userId, jdId)
+    if (!jdId) return;
+    getJobDescription(jdId)
       .then((res) => setJd(res.data))
       .catch(() => toast.error('Failed to load resume'))
       .finally(() => setLoading(false));
-  }, [userId, jdId]);
-
-  const handleDownload = async () => {
-    const html = jd.generatedResumes[activeIdx]?.htmlContent;
-    if (!html) return;
-
-    try {
-      const html2pdf = (await import('html2pdf.js')).default;
-      const container = document.createElement('div');
-      container.innerHTML = html;
-      document.body.appendChild(container);
-
-      await html2pdf()
-        .set({
-          margin: 0,
-          filename: `resume-${jd.role || 'tailored'}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
-        })
-        .from(container)
-        .save();
-
-      document.body.removeChild(container);
-    } catch {
-      toast.error('PDF download failed');
-    }
-  };
+  }, [jdId]);
 
   if (loading) {
     return (
@@ -96,7 +89,7 @@ export default function ResumePreview() {
             Generate Another
           </Link>
           <button
-            onClick={handleDownload}
+            onClick={handlePrint}
             className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
           >
             Download PDF
@@ -110,25 +103,29 @@ export default function ResumePreview() {
             <button
               key={i}
               onClick={() => setActiveIdx(i)}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+              className={`px-3 py-1.5 text-sm rounded-lg transition-colors capitalize ${
                 i === activeIdx
                   ? 'bg-indigo-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              {r.templateId} template
+              {r.templateId}
             </button>
           ))}
         </div>
       )}
 
+      <AdSlot
+        slot={import.meta.env.VITE_ADSENSE_SLOT_PREVIEW}
+        className="bg-white rounded-lg border border-gray-200 p-2 mb-4"
+        minHeight={120}
+      />
+
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-        <iframe
-          ref={iframeRef}
-          srcDoc={active.htmlContent}
-          title="Resume Preview"
-          className="w-full border-0"
-          style={{ height: '1100px' }}
+        <ResumeDocument
+          ref={resumeRef}
+          content={active.content}
+          templateId={active.templateId}
         />
       </div>
     </div>

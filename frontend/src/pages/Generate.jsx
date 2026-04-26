@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { useUser } from '../context/UserContext';
 import { getTemplates, createJobDescription, generateResume } from '../api';
+import AdSlot from '../components/AdSlot';
 
 export default function Generate() {
-  const { userId } = useUser();
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
@@ -23,21 +22,6 @@ export default function Generate() {
       .catch(() => toast.error('Failed to load templates'));
   }, []);
 
-  if (!userId) {
-    return (
-      <div className="text-center py-20">
-        <h2 className="text-xl font-bold text-gray-900 mb-3">Profile Required</h2>
-        <p className="text-gray-600 mb-6">You need to create a profile first before generating a resume.</p>
-        <button
-          onClick={() => navigate('/profile')}
-          className="px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          Create Profile
-        </button>
-      </div>
-    );
-  }
-
   const handleGenerate = async (e) => {
     e.preventDefault();
     if (!description.trim()) {
@@ -51,10 +35,10 @@ export default function Generate() {
 
     setGenerating(true);
     try {
-      const jdRes = await createJobDescription(userId, { company, role, description });
+      const jdRes = await createJobDescription({ company, role, description });
       const jdId = jdRes.data._id;
 
-      await generateResume(userId, jdId, selectedTemplate);
+      await generateResume(jdId, selectedTemplate);
       toast.success('Resume generated!');
       navigate(`/resume/${jdId}`);
     } catch (err) {
@@ -104,6 +88,12 @@ export default function Generate() {
             />
           </div>
         </section>
+
+        <AdSlot
+          slot={import.meta.env.VITE_ADSENSE_SLOT_GENERATE}
+          className="bg-white rounded-lg border border-gray-200 p-2"
+          minHeight={120}
+        />
 
         <section className="bg-white rounded-lg border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Choose Template</h2>

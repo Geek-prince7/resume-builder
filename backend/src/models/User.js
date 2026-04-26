@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { v4: uuidv4 } = require('uuid');
+const bcrypt = require('bcryptjs');
 
 const experienceSchema = new mongoose.Schema({
   company: { type: String, required: true },
@@ -63,9 +64,17 @@ const userSchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
+    email: { type: String, required: true, unique: true },
+    password: { type: String },
+    authProvider: {
+      type: String,
+      enum: ['local', 'google'],
+      default: 'local',
+    },
+    googleId: { type: String, sparse: true },
     name: { type: String, required: true },
-    email: { type: String, required: true },
     phone: String,
+    profilePicture: String,
     totalExperience: {
       years: { type: Number, default: 0 },
       months: { type: Number, default: 0 },
@@ -85,5 +94,23 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password') || !this.password) return next();
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
+});
+
+userSchema.methods.comparePassword = async function (candidate) {
+  if (!this.password) return false;
+  return bcrypt.compare(candidate, this.password);
+};
+
+userSchema.methods.toJSON = function () {
+  const obj = this.toObject();
+  delete obj.password;
+  delete obj.__v;
+  return obj;
+};
 
 module.exports = mongoose.model('User', userSchema);

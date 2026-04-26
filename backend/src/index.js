@@ -2,7 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
+const { logger, requestLogger, APP_ENV } = require('./logger');
+const { corsOptions, applySecurityMiddleware } = require('./middleware/security');
 
+const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const jobDescriptionRoutes = require('./routes/jobDescription.routes');
 const templateRoutes = require('./routes/template.routes');
@@ -11,12 +14,15 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/resume-builder';
 
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+applySecurityMiddleware(app);
+app.use(cors(corsOptions));
+app.use(express.json({ limit: process.env.BODY_LIMIT || '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: process.env.BODY_LIMIT || '2mb' }));
+app.use(requestLogger);
 
+app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/users', jobDescriptionRoutes);
+app.use('/api/job-descriptions', jobDescriptionRoutes);
 app.use('/api/templates', templateRoutes);
 
 app.get('/api/health', (_req, res) => {
@@ -24,7 +30,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use((err, _req, res, _next) => {
-  console.error(err.stack);
+  logger.error('Unhandled backend error', { message: err.message, stack: err.stack });
   res.status(err.status || 500).json({
     error: err.message || 'Internal server error',
   });
@@ -33,12 +39,12 @@ app.use((err, _req, res, _next) => {
 mongoose
   .connect(MONGODB_URI)
   .then(() => {
-    console.log('Connected to MongoDB');
+    logger.info('Connected to MongoDB', { env: APP_ENV });
     app.listen(PORT, () => {
-      console.log(`Backend server running on port ${PORT}`);
+      logger.info('Backend server started', { port: PORT, env: APP_ENV });
     });
   })
   .catch((err) => {
-    console.error('MongoDB connection error:', err);
+    logger.error('MongoDB connection error', { message: err.message, stack: err.stack });
     process.exit(1);
   });

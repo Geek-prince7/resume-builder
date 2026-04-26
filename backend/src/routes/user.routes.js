@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const userController = require('../controllers/user.controller');
+const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -16,9 +17,8 @@ const upload = multer({
   },
 });
 
-router.post('/', userController.createUser);
-router.get('/:userId', userController.getUser);
-router.put('/:userId', userController.updateUser);
-router.post('/:userId/parse-resume', upload.single('resume'), userController.parseResume);
+router.get('/profile', authenticate, userController.getUser);
+router.put('/profile', authenticate, userController.updateUser);
+router.post('/profile/parse-resume', authenticate, upload.single('resume'), userController.parseResume);
 
 module.exports = router;

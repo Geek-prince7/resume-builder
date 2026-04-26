@@ -1,8 +1,10 @@
 const axios = require('axios');
 const JobDescription = require('../models/JobDescription');
-const User = require('../models/User');
+const { retryWithJitter } = require('../utils/retryWithJitter');
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+const AI_REQUEST_TIMEOUT_MS = Number(process.env.AI_REQUEST_TIMEOUT_MS || 30000);
+const AI_RETRY_ATTEMPTS = Number(process.env.AI_RETRY_ATTEMPTS || 3);
 
 exports.createJobDescription = async (req, res, next) => {
   try {
@@ -11,11 +13,8 @@ exports.createJobDescription = async (req, res, next) => {
       return res.status(400).json({ error: 'Job description text is required' });
     }
 
-    const user = await User.findOne({ userId: req.params.userId });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
     const jd = new JobDescription({
-      userId: req.params.userId,
+      userId: req.user.userId,
       company,
       role,
       description,
@@ -29,7 +28,7 @@ exports.createJobDescription = async (req, res, next) => {
 
 exports.getJobDescriptions = async (req, res, next) => {
   try {
-    const jds = await JobDescription.find({ userId: req.params.userId }).sort({ createdAt: -1 });
+    const jds = await JobDescription.find({ userId: req.user.userId }).sort({ createdAt: -1 });
     res.json(jds);
   } catch (err) {
     next(err);
@@ -38,7 +37,7 @@ exports.getJobDescriptions = async (req, res, next) => {
 
 exports.getJobDescription = async (req, res, next) => {
   try {
-    const jd = await JobDescription.findById(req.params.jdId);
+    const jd = await JobDescription.findOne({ _id: req.params.jdId, userId: req.user.userId });
     if (!jd) return res.status(404).json({ error: 'Job description not found' });
     res.json(jd);
   } catch (err) {
@@ -53,37 +52,36 @@ exports.generateResume = async (req, res, next) => {
       return res.status(400).json({ error: 'templateId is required' });
     }
 
-    const user = await User.findOne({ userId: req.params.userId });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    const jd = await JobDescription.findById(req.params.jdId);
+    const jd = await JobDescription.findOne({ _id: req.params.jdId, userId: req.user.userId });
     if (!jd) return res.status(404).json({ error: 'Job description not found' });
 
     jd.status = 'processing';
     await jd.save();
 
-    const aiResponse = await axios.post(`${AI_SERVICE_URL}/generate-resume`, {
-      user_profile: user.toObject(),
-      job_description: jd.description,
-      template_id: templateId,
-    });
+    const aiResponse = await retryWithJitter(
+      () =>
+        axios.post(
+          `${AI_SERVICE_URL}/generate-resume`,
+          {
+            user_profile: req.user.toObject(),
+            job_description: jd.description,
+            template_id: templateId,
+          },
+          { timeout: AI_REQUEST_TIMEOUT_MS }
+        ),
+      { retries: AI_RETRY_ATTEMPTS }
+    );
 
-    const { content, html_content, score } = aiResponse.data;
+    const { content, score } = aiResponse.data;
 
-    jd.generatedResumes.push({
-      templateId,
-      content,
-      htmlContent: html_content,
-      score,
-    });
+    jd.generatedResumes.push({ templateId, content, score });
     jd.status = 'processed';
     await jd.save();
 
     res.json(jd);
   } catch (err) {
-    const jdId = req.params.jdId;
-    if (jdId) {
-      await JobDescription.findByIdAndUpdate(jdId, { status: 'failed' }).catch(() => {});
+    if (req.params.jdId) {
+      await JobDescription.findByIdAndUpdate(req.params.jdId, { status: 'failed' }).catch(() => {});
     }
     next(err);
   }
