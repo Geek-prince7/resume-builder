@@ -1,7 +1,6 @@
 node_modules/
 dist/
 build/
-.env
 *.log
 .DS_Store
 __pycache__/
@@ -11,3 +10,11 @@ __pycache__/
 venv/
 *.egg-info/
 uploads/
+
+# Env / secrets (keep .env.example committed)
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
