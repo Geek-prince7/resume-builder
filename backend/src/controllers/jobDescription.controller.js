@@ -63,7 +63,7 @@ exports.generateResume = async (req, res, next) => {
         axios.post(
           `${AI_SERVICE_URL}/generate-resume`,
           {
-            user_profile: req.user.toObject(),
+            user_profile: req.user.toJSON(),
             job_description: jd.description,
             template_id: templateId,
           },
@@ -82,6 +82,11 @@ exports.generateResume = async (req, res, next) => {
   } catch (err) {
     if (req.params.jdId) {
       await JobDescription.findByIdAndUpdate(req.params.jdId, { status: 'failed' }).catch(() => {});
+    }
+    if (err.response) {
+      const detail = err.response.data?.detail || err.response.data?.error || err.message;
+      const status = err.response.status >= 400 && err.response.status < 600 ? err.response.status : 502;
+      return res.status(status).json({ error: 'AI service request failed', detail });
     }
     next(err);
   }

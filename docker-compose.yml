@@ -20,6 +20,9 @@ services:
       - "${AI_SERVICE_PORT:-8000}:8000"
     env_file:
       - ./ai-service/.env
+    environment:
+      # Allow Docker service-name Host headers (backend -> http://ai-service:8000)
+      - TRUSTED_HOSTS=localhost,127.0.0.1,ai-service,backend
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)"]
       interval: 10s
