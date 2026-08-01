@@ -11,7 +11,12 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:ai\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:ai": "cd ai-service && source venv/bin/activate && uvicorn app.main:app --reload --port 8000",
-    "dev:frontend": "cd frontend && npm run dev"
+    "dev:frontend": "cd frontend && npm run dev",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "docker:ps": "docker compose ps",
+    "docker:reset": "docker compose down -v && docker compose up --build -d"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
