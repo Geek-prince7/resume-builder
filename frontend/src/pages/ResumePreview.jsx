@@ -4,6 +4,7 @@ import { useReactToPrint } from 'react-to-print';
 import toast from 'react-hot-toast';
 import { getJobDescription } from '../api';
 import ResumeDocument from '../components/templates/ResumeDocument';
+import ResumeEditor from '../components/ResumeEditor';
 import AdSlot from '../components/AdSlot';
 
 export default function ResumePreview() {
@@ -11,6 +12,7 @@ export default function ResumePreview() {
   const [jd, setJd] = useState(null);
   const [activeIdx, setActiveIdx] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
   const resumeRef = useRef(null);
 
   const sanitize = (value, fallback) =>
@@ -61,6 +63,15 @@ export default function ResumePreview() {
 
   const active = jd.generatedResumes[activeIdx];
 
+  const handleResumeSaved = (savedResume) => {
+    setJd((current) => ({
+      ...current,
+      generatedResumes: current.generatedResumes.map((resume) =>
+        resume._id === savedResume._id ? savedResume : resume
+      ),
+    }));
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -82,6 +93,12 @@ export default function ResumePreview() {
           )}
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={() => setEditing((value) => !value)}
+            className="px-4 py-2 text-sm border border-indigo-300 rounded-lg text-indigo-700 hover:bg-indigo-50 transition-colors"
+          >
+            {editing ? 'Close Editor' : 'Edit Resume'}
+          </button>
           <Link
             to="/generate"
             className="px-4 py-2 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
@@ -113,6 +130,15 @@ export default function ResumePreview() {
             </button>
           ))}
         </div>
+      )}
+
+      {editing && (
+        <ResumeEditor
+          jdId={jdId}
+          resume={active}
+          onSaved={handleResumeSaved}
+          onClose={() => setEditing(false)}
+        />
       )}
 
       <AdSlot

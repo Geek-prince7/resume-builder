@@ -1,11 +1,17 @@
 const mongoose = require('mongoose');
 
+const resumeRevisionSchema = new mongoose.Schema({
+  content: { type: mongoose.Schema.Types.Mixed, required: true },
+  createdAt: { type: Date, default: Date.now },
+});
+
 const generatedResumeSchema = new mongoose.Schema({
   templateId: { type: String, required: true },
   content: { type: mongoose.Schema.Types.Mixed },
-  htmlContent: String,
   score: { type: Number, min: 0, max: 100 },
+  revisions: { type: [resumeRevisionSchema], default: [] },
   createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
 });
 
 const jobDescriptionSchema = new mongoose.Schema(
