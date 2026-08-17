@@ -1,6 +1,7 @@
 const axios = require('axios');
 const User = require('../models/User');
 const { retryWithJitter } = require('../utils/retryWithJitter');
+const { reserveQuota, completeQuota, releaseQuota } = require('../services/quota.service');
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 const AI_REQUEST_TIMEOUT_MS = Number(process.env.AI_REQUEST_TIMEOUT_MS || 30000);
@@ -33,10 +34,14 @@ exports.updateUser = async (req, res, next) => {
 };
 
 exports.parseResume = async (req, res, next) => {
+  let usageEvent;
+  let quotaCompleted = false;
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No resume file uploaded' });
     }
+
+    usageEvent = await reserveQuota(req.user.userId, 'resume_parse');
 
     const formData = new FormData();
     const blob = new Blob([req.file.buffer], { type: req.file.mimetype });
@@ -51,7 +56,9 @@ exports.parseResume = async (req, res, next) => {
       { retries: AI_RETRY_ATTEMPTS }
     );
 
-    const parsedData = aiResponse.data;
+    const parsedData = aiResponse.data.data;
+    await completeQuota(usageEvent, aiResponse.data.usage);
+    quotaCompleted = true;
 
     const user = await User.findOneAndUpdate(
       { userId: req.user.userId },
@@ -62,6 +69,7 @@ exports.parseResume = async (req, res, next) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ message: 'Resume parsed and profile updated', user });
   } catch (err) {
+    if (usageEvent && !quotaCompleted) await releaseQuota(usageEvent).catch(() => {});
     next(err);
   }
 };

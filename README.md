@@ -93,6 +93,18 @@ Security controls enabled:
 - AI service: in-memory per-IP rate limiting for `/parse-resume` and `/generate-resume`, trusted host validation, secure response headers, request-size guards.
 - AI/network resilience: retry with exponential backoff + jitter for outbound AI calls on both backend and AI service.
 
+## Billing and quotas
+
+The app includes Free, Starter, Pro, and Career plans. AI generations/iterations are metered as AI actions; manual edits and PDF downloads are free. Configure Stripe Checkout by creating three recurring monthly prices and setting `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PRO`, and `STRIPE_PRICE_CAREER` in `backend/.env`.
+
+For local Stripe webhook testing:
+
+```bash
+stripe listen --forward-to localhost:3001/api/billing/webhook
+```
+
+Copy the printed `whsec_...` value to `STRIPE_WEBHOOK_SECRET`.
+
 ## Services
 
 | Service | URL | Description |

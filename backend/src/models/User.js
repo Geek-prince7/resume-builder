@@ -91,6 +91,31 @@ const userSchema = new mongoose.Schema(
     projects: [projectSchema],
     languages: [languageSchema],
     achievements: [String],
+    billing: {
+      plan: { type: String, enum: ['free', 'starter', 'pro', 'career'], default: 'free' },
+      status: {
+        type: String,
+        enum: ['free', 'trialing', 'active', 'past_due', 'canceled', 'incomplete'],
+        default: 'free',
+      },
+      stripeCustomerId: { type: String, index: true, sparse: true },
+      stripeSubscriptionId: { type: String, index: true, sparse: true },
+      currentPeriodStart: Date,
+      currentPeriodEnd: Date,
+      cancelAtPeriodEnd: { type: Boolean, default: false },
+    },
+    usage: {
+      periodStart: { type: Date, default: Date.now },
+      periodEnd: {
+        type: Date,
+        default: () => new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1)),
+      },
+      aiActionsUsed: { type: Number, default: 0, min: 0 },
+      resumeParsesUsed: { type: Number, default: 0, min: 0 },
+      inputTokens: { type: Number, default: 0, min: 0 },
+      outputTokens: { type: Number, default: 0, min: 0 },
+      estimatedCostUsd: { type: Number, default: 0, min: 0 },
+    },
   },
   { timestamps: true }
 );

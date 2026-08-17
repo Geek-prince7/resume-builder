@@ -6,6 +6,7 @@ import { getJobDescription } from '../api';
 import ResumeDocument from '../components/templates/ResumeDocument';
 import ResumeEditor from '../components/ResumeEditor';
 import AdSlot from '../components/AdSlot';
+import AtsReport from '../components/AtsReport';
 
 export default function ResumePreview() {
   const { jdId } = useParams();
@@ -140,6 +141,8 @@ export default function ResumePreview() {
           onClose={() => setEditing(false)}
         />
       )}
+
+      <AtsReport report={active.atsReport} score={active.score} />
 
       <AdSlot
         slot={import.meta.env.VITE_ADSENSE_SLOT_PREVIEW}

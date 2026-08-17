@@ -50,5 +50,9 @@ export const restoreGeneratedResumeRevision = (jdId, resumeId, revisionId) =>
   api.post(`/job-descriptions/${jdId}/resumes/${resumeId}/revisions/${revisionId}/restore`);
 
 export const getTemplates = () => api.get('/templates');
+export const getPlans = () => api.get('/billing/plans');
+export const getUsage = () => api.get('/billing/usage');
+export const createCheckout = (planId) => api.post('/billing/checkout', { planId });
+export const createBillingPortal = () => api.post('/billing/portal');
 
 export default api;

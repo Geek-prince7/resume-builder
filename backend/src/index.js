@@ -9,11 +9,14 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const jobDescriptionRoutes = require('./routes/jobDescription.routes');
 const templateRoutes = require('./routes/template.routes');
+const billingRoutes = require('./routes/billing.routes');
+const billingController = require('./controllers/billing.controller');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/resume-builder';
 
+app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), billingController.webhook);
 applySecurityMiddleware(app);
 app.use(cors(corsOptions));
 app.use(express.json({ limit: process.env.BODY_LIMIT || '2mb' }));
@@ -24,6 +27,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/job-descriptions', jobDescriptionRoutes);
 app.use('/api/templates', templateRoutes);
+app.use('/api/billing', billingRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'resume-builder-backend' });

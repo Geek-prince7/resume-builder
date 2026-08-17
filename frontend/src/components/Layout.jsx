@@ -6,6 +6,8 @@ const links = [
   { to: '/', label: 'Dashboard' },
   { to: '/profile', label: 'Profile' },
   { to: '/generate', label: 'Generate Resume' },
+  { to: '/pricing', label: 'Pricing' },
+  { to: '/billing', label: 'Usage' },
 ];
 
 export default function Layout() {

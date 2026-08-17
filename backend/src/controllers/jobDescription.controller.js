@@ -1,6 +1,7 @@
 const axios = require('axios');
 const JobDescription = require('../models/JobDescription');
 const { retryWithJitter } = require('../utils/retryWithJitter');
+const { reserveQuota, completeQuota, releaseQuota } = require('../services/quota.service');
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 const AI_REQUEST_TIMEOUT_MS = Number(process.env.AI_REQUEST_TIMEOUT_MS || 30000);
@@ -46,6 +47,8 @@ exports.getJobDescription = async (req, res, next) => {
 };
 
 exports.generateResume = async (req, res, next) => {
+  let usageEvent;
+  let quotaCompleted = false;
   try {
     const { templateId } = req.body;
     if (!templateId) {
@@ -57,6 +60,7 @@ exports.generateResume = async (req, res, next) => {
 
     jd.status = 'processing';
     await jd.save();
+    usageEvent = await reserveQuota(req.user.userId, 'resume_generate', jd.id);
 
     const aiResponse = await retryWithJitter(
       () =>
@@ -72,14 +76,17 @@ exports.generateResume = async (req, res, next) => {
       { retries: AI_RETRY_ATTEMPTS }
     );
 
-    const { content, score } = aiResponse.data;
+    const { content, score, usage, ats_report: atsReport } = aiResponse.data;
+    await completeQuota(usageEvent, usage);
+    quotaCompleted = true;
 
-    jd.generatedResumes.push({ templateId, content, score });
+    jd.generatedResumes.push({ templateId, content, score, atsReport });
     jd.status = 'processed';
     await jd.save();
 
     res.json(jd);
   } catch (err) {
+    if (usageEvent && !quotaCompleted) await releaseQuota(usageEvent).catch(() => {});
     if (req.params.jdId) {
       await JobDescription.findByIdAndUpdate(req.params.jdId, { status: 'failed' }).catch(() => {});
     }
@@ -87,6 +94,9 @@ exports.generateResume = async (req, res, next) => {
       const detail = err.response.data?.detail || err.response.data?.error || err.message;
       const status = err.response.status >= 400 && err.response.status < 600 ? err.response.status : 502;
       return res.status(status).json({ error: 'AI service request failed', detail });
+    }
+    if (err.code === 'QUOTA_EXCEEDED') {
+      return res.status(402).json({ error: err.message, code: err.code, details: err.details });
     }
     next(err);
   }

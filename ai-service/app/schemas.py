@@ -81,3 +81,10 @@ class GenerateRequest(BaseModel):
 class GenerateResponse(BaseModel):
     content: dict
     score: int
+    ats_report: dict = {}
+    usage: dict = {}
+
+
+class ParseResponse(BaseModel):
+    data: dict
+    usage: dict = {}
