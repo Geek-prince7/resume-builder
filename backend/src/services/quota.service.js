@@ -33,6 +33,7 @@ async function getUsageSummary(user) {
     remaining: {
       aiActions: Math.max(0, plan.monthlyAiActions - user.usage.aiActionsUsed),
       resumeParses: Math.max(0, plan.monthlyResumeParses - user.usage.resumeParsesUsed),
+      tokens: Math.max(0, plan.monthlyTokens - user.usage.inputTokens - user.usage.outputTokens),
     },
   };
 }
@@ -44,6 +45,14 @@ async function reserveQuota(userId, operation, referenceId) {
 
   const plan = getPlan(user.billing?.plan);
   const isParse = operation === 'resume_parse';
+  const tokensUsed = user.usage.inputTokens + user.usage.outputTokens;
+  if (!isParse && tokensUsed >= plan.monthlyTokens) {
+    const error = new Error('Your monthly AI token quota is exhausted');
+    error.status = 402;
+    error.code = 'TOKEN_QUOTA_EXCEEDED';
+    error.details = { plan: plan.id, used: tokensUsed, limit: plan.monthlyTokens, periodEnd: user.usage.periodEnd };
+    throw error;
+  }
   const usedField = isParse ? 'usage.resumeParsesUsed' : 'usage.aiActionsUsed';
   const limit = isParse ? plan.monthlyResumeParses : plan.monthlyAiActions;
   const current = isParse ? user.usage.resumeParsesUsed : user.usage.aiActionsUsed;

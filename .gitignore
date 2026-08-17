@@ -12,6 +12,10 @@ venv/
 uploads/
 tmp/
 output/
+coverage/
+test-results/
+playwright-report/
+.pytest_cache/
 
 # Env / secrets (keep .env.example committed)
 .env

@@ -249,6 +249,14 @@ def _retry_with_jitter(task):
 def _call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.2) -> dict:
     provider = AI_PROVIDER.lower()
     def invoke(selected):
+        if selected == "mock":
+            if "cover letter" in system_prompt.lower():
+                data = {"content": "Dear Hiring Manager,\n\nI am interested in this opportunity.\n\nSincerely,\nTest User"}
+            elif "resume parser" in system_prompt.lower():
+                data = {"name": "Test User", "skills": []}
+            else:
+                data = {"content": {"name": "Test User", "email": "test@example.com", "summary": "Software engineer focused on reliable systems.", "experiences": [], "skills": [{"name": "Node.js", "category": "Backend"}], "education": [], "projects": [], "certifications": []}, "score": 75, "atsReport": {"confirmedSkills": ["Node.js"], "missingSkills": [], "matchedKeywords": ["Node.js"], "missingKeywords": [], "strengths": ["Backend development"], "recommendations": []}}
+            return {"data": data, "usage": {"provider": "mock", "model": "mock", "inputTokens": 0, "outputTokens": 0, "estimatedCostUsd": 0}}
         if selected == "gemini": return _retry_with_jitter(lambda: _gemini_call(system_prompt, user_prompt, temperature))
         if selected == "openai": return _retry_with_jitter(lambda: _openai_call(system_prompt, user_prompt, temperature))
         raise ValueError(f"Unknown AI provider: '{selected}'")

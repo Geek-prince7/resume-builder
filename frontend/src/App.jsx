@@ -15,10 +15,10 @@ import Account from './pages/Account';
 import { ForgotPassword, ResetPassword, VerifyEmail } from './pages/AccountTokenPage';
 import { UserProvider, useUser } from './context/UserContext';
 
-function AuthRedirect({ children }) {
+function AuthRedirect({ children, redirectTo = '/' }) {
   const { token, loading } = useUser();
   if (loading) return null;
-  if (token) return <Navigate to="/" replace />;
+  if (token) return <Navigate to={redirectTo} replace />;
   return children;
 }
 
@@ -29,7 +29,7 @@ export default function App() {
         <Toaster position="top-right" />
         <Routes>
           <Route path="/login" element={<AuthRedirect><Login /></AuthRedirect>} />
-          <Route path="/signup" element={<AuthRedirect><Signup /></AuthRedirect>} />
+          <Route path="/signup" element={<AuthRedirect redirectTo="/profile"><Signup /></AuthRedirect>} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
