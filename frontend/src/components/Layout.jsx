@@ -5,6 +5,7 @@ import AdSlot from './AdSlot';
 const links = [
   { to: '/', label: 'Dashboard' },
   { to: '/profile', label: 'Profile' },
+  { to: '/profile-variants', label: 'Variants' },
   { to: '/generate', label: 'Generate Resume' },
   { to: '/pricing', label: 'Pricing' },
   { to: '/billing', label: 'Usage' },

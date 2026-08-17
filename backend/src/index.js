@@ -10,6 +10,7 @@ const userRoutes = require('./routes/user.routes');
 const jobDescriptionRoutes = require('./routes/jobDescription.routes');
 const templateRoutes = require('./routes/template.routes');
 const billingRoutes = require('./routes/billing.routes');
+const profileVariantRoutes = require('./routes/profileVariant.routes');
 const billingController = require('./controllers/billing.controller');
 
 const app = express();
@@ -28,6 +29,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/job-descriptions', jobDescriptionRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/profile-variants', profileVariantRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'resume-builder-backend' });

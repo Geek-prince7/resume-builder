@@ -31,6 +31,7 @@ const jobDescriptionSchema = new mongoose.Schema(
     },
     company: String,
     role: String,
+    profileVariantId: String,
     description: { type: String, required: true },
     status: {
       type: String,
@@ -38,6 +39,11 @@ const jobDescriptionSchema = new mongoose.Schema(
       default: 'pending',
     },
     generatedResumes: [generatedResumeSchema],
+    coverLetters: [{
+      content: { type: String, required: true },
+      profileVariantId: String,
+      createdAt: { type: Date, default: Date.now },
+    }],
   },
   { timestamps: true }
 );

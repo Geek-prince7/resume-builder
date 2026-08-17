@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { getTemplates, createJobDescription, generateResume } from '../api';
+import { getTemplates, createJobDescription, generateResume, generateCoverLetter, getProfileVariants } from '../api';
 import AdSlot from '../components/AdSlot';
 
 export default function Generate() {
@@ -12,6 +12,9 @@ export default function Generate() {
   const [role, setRole] = useState('');
   const [description, setDescription] = useState('');
   const [generating, setGenerating] = useState(false);
+  const [variants, setVariants] = useState([]);
+  const [profileVariantId, setProfileVariantId] = useState('');
+  const [includeCoverLetter, setIncludeCoverLetter] = useState(false);
 
   useEffect(() => {
     getTemplates()
@@ -20,6 +23,7 @@ export default function Generate() {
         if (res.data.length > 0) setSelectedTemplate(res.data[0].id);
       })
       .catch(() => toast.error('Failed to load templates'));
+    getProfileVariants().then((res) => setVariants(res.data)).catch(() => {});
   }, []);
 
   const handleGenerate = async (e) => {
@@ -35,10 +39,11 @@ export default function Generate() {
 
     setGenerating(true);
     try {
-      const jdRes = await createJobDescription({ company, role, description });
+      const jdRes = await createJobDescription({ company, role, description, profileVariantId });
       const jdId = jdRes.data._id;
 
-      await generateResume(jdId, selectedTemplate);
+      await generateResume(jdId, selectedTemplate, profileVariantId);
+      if (includeCoverLetter) await generateCoverLetter(jdId, profileVariantId);
       toast.success('Resume generated!');
       navigate(`/resume/${jdId}`);
     } catch (err) {
@@ -86,6 +91,19 @@ export default function Generate() {
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               placeholder="Paste the full job description here..."
             />
+          </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <label className="block text-xs font-medium text-gray-600">
+              Profile variant
+              <select value={profileVariantId} onChange={(e) => setProfileVariantId(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm">
+                <option value="">Full profile</option>
+                {variants.map((variant) => <option key={variant._id} value={variant._id}>{variant.name}</option>)}
+              </select>
+            </label>
+            <label className="flex items-end gap-2 pb-2 text-sm text-gray-700">
+              <input type="checkbox" checked={includeCoverLetter} onChange={(e) => setIncludeCoverLetter(e.target.checked)} />
+              Generate a tailored cover letter (uses 1 additional AI action)
+            </label>
           </div>
         </section>
 
@@ -136,7 +154,7 @@ export default function Generate() {
   );
 }
 
-function TemplatePreview({ id, selected }) {
+function TemplatePreview({ id }) {
   const configs = {
     classic:   { accent: '#1a1a1a', headerBg: '#1a1a1a', pillBg: '#f5f5f5', pillBorder: '#ddd' },
     modern:    { accent: '#3b82f6', headerBg: '#3b82f6', pillBg: '#eff6ff', pillBorder: '#dbeafe' },

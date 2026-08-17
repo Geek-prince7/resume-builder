@@ -88,3 +88,13 @@ class GenerateResponse(BaseModel):
 class ParseResponse(BaseModel):
     data: dict
     usage: dict = {}
+
+
+class CoverLetterRequest(BaseModel):
+    user_profile: dict
+    job_description: str
+
+
+class CoverLetterResponse(BaseModel):
+    content: str
+    usage: dict = {}

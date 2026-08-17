@@ -147,6 +147,8 @@ Return a JSON object with:
 }
 Return ONLY valid JSON, no markdown fences or extra text."""
 
+COVER_LETTER_SYSTEM_PROMPT = """Write a concise, professional cover letter using only facts supplied in the user profile. Connect evidenced experience to the job description, acknowledge no unsupported skills, and never invent employers, metrics, education, or qualifications. Return JSON only: {"content": "the complete cover letter"}."""
+
 
 # ---------------------------------------------------------------------------
 # OpenAI provider
@@ -261,4 +263,12 @@ def generate_tailored_resume(user_profile: dict, job_description: str) -> dict:
         GENERATE_SYSTEM_PROMPT,
         f"User Profile:\n{user_json}\n\nJob Description:\n{job_description}\n\nCreate a tailored resume for this job.",
         temperature=0.3,
+    )
+
+
+def generate_cover_letter(user_profile: dict, job_description: str) -> dict:
+    return _call_llm(
+        COVER_LETTER_SYSTEM_PROMPT,
+        f"User Profile:\n{json.dumps(user_profile, indent=2, default=str)}\n\nJob Description:\n{job_description}",
+        temperature=0.35,
     )

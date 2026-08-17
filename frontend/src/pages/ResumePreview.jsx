@@ -144,6 +144,13 @@ export default function ResumePreview() {
 
       <AtsReport report={active.atsReport} score={active.score} />
 
+      {jd.coverLetters?.length > 0 && (
+        <section className="mb-6 rounded-xl border border-gray-200 bg-white p-6">
+          <div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-semibold">Cover letter</h2><button onClick={() => navigator.clipboard.writeText(jd.coverLetters.at(-1).content).then(() => toast.success('Cover letter copied'))} className="text-sm font-medium text-indigo-600">Copy</button></div>
+          <div className="whitespace-pre-wrap text-sm leading-7 text-gray-700">{jd.coverLetters.at(-1).content}</div>
+        </section>
+      )}
+
       <AdSlot
         slot={import.meta.env.VITE_ADSENSE_SLOT_PREVIEW}
         className="bg-white rounded-lg border border-gray-200 p-2 mb-4"

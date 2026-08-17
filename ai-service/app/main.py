@@ -10,7 +10,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 load_dotenv()
 
-from app.routes import parser, generator
+from app.routes import parser, generator, cover_letter
 from app.logging_config import setup_logging, get_logger, APP_ENV
 
 setup_logging()
@@ -37,6 +37,7 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=trusted_hosts)
 
 app.include_router(parser.router)
 app.include_router(generator.router)
+app.include_router(cover_letter.router)
 
 
 @app.middleware("http")

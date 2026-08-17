@@ -10,6 +10,7 @@ import Generate from './pages/Generate';
 import ResumePreview from './pages/ResumePreview';
 import Pricing from './pages/Pricing';
 import Billing from './pages/Billing';
+import ProfileVariants from './pages/ProfileVariants';
 import { UserProvider, useUser } from './context/UserContext';
 
 function AuthRedirect({ children }) {
@@ -35,6 +36,7 @@ export default function App() {
               <Route path="/resume/:jdId" element={<ResumePreview />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/billing" element={<Billing />} />
+              <Route path="/profile-variants" element={<ProfileVariants />} />
             </Route>
           </Route>
         </Routes>
