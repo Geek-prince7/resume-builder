@@ -10,6 +10,9 @@ const emptyEducation = {
   institution: '', degree: '', field: '', startDate: '', endDate: '', grade: '', description: '',
 };
 const emptySkill = { name: '', level: 'intermediate', category: '' };
+const COUNTRY_OPTIONS = [['US', 'United States'], ['CA', 'Canada'], ['GB', 'United Kingdom'], ['ES', 'Spain'], ['DE', 'Germany'], ['FR', 'France'], ['NL', 'Netherlands'], ['IE', 'Ireland'], ['AU', 'Australia'], ['IN', 'India'], ['SG', 'Singapore']];
+const COMPANY_TYPES = [['startup_early', 'Early startup'], ['startup_growth', 'Growth startup'], ['small', 'Small company'], ['mid_market', 'Mid-market'], ['enterprise', 'Enterprise'], ['public_company', 'Public company'], ['agency_consulting', 'Agency / consulting'], ['nonprofit', 'Nonprofit']];
+const DEFAULT_JOB_PREFERENCES = { targetCountries: [], targetRoles: [], industries: [], companyTypes: [], workModes: [], requiresSponsorship: false, openToRelocation: false, minimumMatchScore: 50, digestFrequency: 'daily' };
 
 export default function Profile() {
   const { refreshUser } = useUser();
@@ -29,6 +32,7 @@ export default function Profile() {
     projects: [],
     languages: [],
     achievements: [''],
+    jobPreferences: DEFAULT_JOB_PREFERENCES,
   });
 
   useEffect(() => {
@@ -48,6 +52,7 @@ export default function Profile() {
           projects: u.projects || [],
           languages: u.languages || [],
           achievements: u.achievements?.length ? u.achievements : [''],
+          jobPreferences: { ...DEFAULT_JOB_PREFERENCES, ...(u.jobPreferences || {}) },
         });
       })
       .catch(() => toast.error('Failed to load profile'))
@@ -98,6 +103,7 @@ export default function Profile() {
         projects: u.projects?.length ? u.projects : form.projects,
         languages: u.languages?.length ? u.languages : form.languages,
         achievements: u.achievements?.length ? u.achievements : form.achievements,
+        jobPreferences: form.jobPreferences,
       });
       refreshUser(u);
       toast.success('Resume parsed and profile updated!');
@@ -170,6 +176,25 @@ export default function Profile() {
             <Input label="GitHub URL" value={form.githubUrl} onChange={(v) => setField('githubUrl', v)} />
             <Input label="Behance URL" value={form.behanceUrl} onChange={(v) => setField('behanceUrl', v)} />
             <Input label="Portfolio URL" value={form.portfolioUrl} onChange={(v) => setField('portfolioUrl', v)} />
+          </div>
+        </section>
+
+        <section className="bg-white rounded-lg border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900">Target job market</h2>
+          <p className="mt-1 mb-5 text-sm text-gray-500">These preferences power daily company and job recommendations. Countries are optional, but selecting them produces more relevant results.</p>
+          <div className="space-y-5">
+            <ToggleGroup label="Target countries" options={COUNTRY_OPTIONS} values={form.jobPreferences.targetCountries} onChange={(values) => setField('jobPreferences', { ...form.jobPreferences, targetCountries: values })} />
+            <ToggleGroup label="Company types" options={COMPANY_TYPES} values={form.jobPreferences.companyTypes} onChange={(values) => setField('jobPreferences', { ...form.jobPreferences, companyTypes: values })} />
+            <ToggleGroup label="Work mode" options={[["remote", "Remote"], ["hybrid", "Hybrid"], ["onsite", "Onsite"]]} values={form.jobPreferences.workModes} onChange={(values) => setField('jobPreferences', { ...form.jobPreferences, workModes: values })} />
+            <div className="grid gap-4 md:grid-cols-2">
+              <Input label="Target roles (comma separated)" value={form.jobPreferences.targetRoles.join(', ')} onChange={(value) => setField('jobPreferences', { ...form.jobPreferences, targetRoles: value.split(',').map((item) => item.trim()).filter(Boolean) })} />
+              <Input label="Industries (comma separated)" value={form.jobPreferences.industries.join(', ')} onChange={(value) => setField('jobPreferences', { ...form.jobPreferences, industries: value.split(',').map((item) => item.trim()).filter(Boolean) })} />
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <Input label="Minimum match score" type="number" value={form.jobPreferences.minimumMatchScore} onChange={(value) => setField('jobPreferences', { ...form.jobPreferences, minimumMatchScore: Number(value) })} />
+              <label className="text-xs font-medium text-gray-600">Recommendation digest<select value={form.jobPreferences.digestFrequency} onChange={(e) => setField('jobPreferences', { ...form.jobPreferences, digestFrequency: e.target.value })} className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"><option value="off">Off</option><option value="daily">Daily</option><option value="weekly">Weekly</option></select></label>
+              <div className="space-y-2 pt-5 text-sm text-gray-700"><label className="flex items-center gap-2"><input type="checkbox" checked={form.jobPreferences.requiresSponsorship} onChange={(e) => setField('jobPreferences', { ...form.jobPreferences, requiresSponsorship: e.target.checked })} /> I require sponsorship</label><label className="flex items-center gap-2"><input type="checkbox" checked={form.jobPreferences.openToRelocation} onChange={(e) => setField('jobPreferences', { ...form.jobPreferences, openToRelocation: e.target.checked })} /> Open to relocation</label></div>
+            </div>
           </div>
         </section>
 
@@ -321,4 +346,9 @@ function Input({ label, value, onChange, type = 'text', disabled = false }) {
         className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent disabled:bg-gray-100" />
     </div>
   );
+}
+
+function ToggleGroup({ label, options, values, onChange }) {
+  const toggle = (value) => onChange(values.includes(value) ? values.filter((item) => item !== value) : [...values, value]);
+  return <fieldset><legend className="mb-2 text-xs font-medium text-gray-600">{label}</legend><div className="flex flex-wrap gap-2">{options.map(([value, text]) => <button type="button" key={value} onClick={() => toggle(value)} className={`rounded-full border px-3 py-1.5 text-xs font-medium ${values.includes(value) ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-gray-300 bg-white text-gray-600'}`}>{text}</button>)}</div></fieldset>;
 }

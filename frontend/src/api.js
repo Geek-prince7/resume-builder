@@ -93,5 +93,11 @@ export const getDueConnections = () => api.get('/connections/due');
 export const createConnection = (data) => api.post('/connections', data);
 export const updateConnection = (id, data) => api.put(`/connections/${id}`, data);
 export const deleteConnection = (id) => api.delete(`/connections/${id}`);
+export const getRecommendations = (params) => api.get('/discovery/recommendations', { params });
+export const getDiscoverySummary = () => api.get('/discovery/summary');
+export const getMatchingCompanies = () => api.get('/discovery/companies');
+export const refreshRecommendationMatches = () => api.post('/discovery/match');
+export const runJobDiscovery = () => api.post('/discovery/run');
+export const updateRecommendation = (id, status) => api.put(`/discovery/recommendations/${id}`, { status });
 
 export default api;

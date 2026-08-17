@@ -100,6 +100,20 @@ const userSchema = new mongoose.Schema(
     customSections: [{ title: String, items: [String] }],
     workAuthorization: String,
     preferredLocation: String,
+    jobPreferences: {
+      targetCountries: [{ type: String, trim: true, uppercase: true }],
+      targetRoles: [{ type: String, trim: true }],
+      industries: [{ type: String, trim: true }],
+      companyTypes: [{
+        type: String,
+        enum: ['startup_early', 'startup_growth', 'small', 'mid_market', 'enterprise', 'public_company', 'agency_consulting', 'nonprofit'],
+      }],
+      workModes: [{ type: String, enum: ['remote', 'hybrid', 'onsite'] }],
+      requiresSponsorship: { type: Boolean, default: false },
+      openToRelocation: { type: Boolean, default: false },
+      minimumMatchScore: { type: Number, min: 0, max: 100, default: 50 },
+      digestFrequency: { type: String, enum: ['off', 'daily', 'weekly'], default: 'daily' },
+    },
     billing: {
       plan: { type: String, enum: ['free', 'starter', 'pro', 'career'], default: 'free' },
       status: {
