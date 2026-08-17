@@ -49,3 +49,29 @@ test('job tracker and referral CRM keep records scoped to the signed-in user', a
   assert.equal(sent.status, 200);
   assert.ok(sent.body.followUpAt);
 });
+
+test('target preferences produce user-scoped job recommendations that can be saved', async () => {
+  const Company = require('../src/models/Company');
+  const DiscoveredJob = require('../src/models/DiscoveredJob');
+  const User = require('../src/models/User');
+  const { matchUser } = require('../src/services/discovery.service');
+  const signup = await request(app).post('/api/auth/signup').send({ name: 'Discovery User', email: 'discovery@example.com', password: 'password123' });
+  const auth = { Authorization: `Bearer ${signup.body.token}` };
+  const profile = await request(app).put('/api/users/profile').set(auth).send({
+    jobPreferences: { targetCountries: ['US'], targetRoles: ['Backend Engineer'], companyTypes: ['startup_growth'], workModes: ['remote'], minimumMatchScore: 50 },
+    skills: [{ name: 'Node.js', level: 'advanced' }, { name: 'MongoDB', level: 'advanced' }],
+  });
+  assert.equal(profile.status, 200);
+  assert.deepEqual(profile.body.jobPreferences.targetCountries, ['US']);
+  const company = await Company.create({ name: 'Northstar', slug: 'northstar', source: 'lever', country: 'US', companyType: 'startup_growth' });
+  await DiscoveredJob.create({ externalId: 'job-1', source: 'lever', companyId: company._id, companyName: company.name, title: 'Backend Engineer', description: 'Build remote Node.js APIs with MongoDB', country: 'US', workMode: 'remote', jobUrl: 'https://example.com/jobs/1' });
+  const user = await User.findOne({ userId: signup.body.user.userId });
+  assert.equal(await matchUser(user), 1);
+  const recommendations = await request(app).get('/api/discovery/recommendations').set(auth);
+  assert.equal(recommendations.status, 200);
+  assert.equal(recommendations.body.length, 1);
+  assert.ok(recommendations.body[0].score >= 90);
+  const saved = await request(app).put(`/api/discovery/recommendations/${recommendations.body[0]._id}`).set(auth).send({ status: 'saved' });
+  assert.equal(saved.status, 200);
+  assert.equal(saved.body.trackedJob.applicationStatus, 'saved');
+});

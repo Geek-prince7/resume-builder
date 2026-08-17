@@ -14,6 +14,7 @@ import ProfileVariants from './pages/ProfileVariants';
 import Account from './pages/Account';
 import JobTracker from './pages/JobTracker';
 import Connections from './pages/Connections';
+import Opportunities from './pages/Opportunities';
 import { ForgotPassword, ResetPassword, VerifyEmail } from './pages/AccountTokenPage';
 import { UserProvider, useUser } from './context/UserContext';
 
@@ -42,6 +43,7 @@ export default function App() {
               <Route path="/generate" element={<Generate />} />
               <Route path="/jobs" element={<JobTracker />} />
               <Route path="/connections" element={<Connections />} />
+              <Route path="/opportunities" element={<Opportunities />} />
               <Route path="/resume/:jdId" element={<ResumePreview />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/billing" element={<Billing />} />

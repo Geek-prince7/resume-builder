@@ -9,6 +9,7 @@ const templateRoutes = require('./routes/template.routes');
 const billingRoutes = require('./routes/billing.routes');
 const profileVariantRoutes = require('./routes/profileVariant.routes');
 const connectionRequestRoutes = require('./routes/connectionRequest.routes');
+const discoveryRoutes = require('./routes/discovery.routes');
 const billingController = require('./controllers/billing.controller');
 const { snapshot } = require('./metrics');
 
@@ -26,6 +27,7 @@ app.use('/api/templates', templateRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/profile-variants', profileVariantRoutes);
 app.use('/api/connections', connectionRequestRoutes);
+app.use('/api/discovery', discoveryRoutes);
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', service: 'resume-builder-backend' }));
 app.get('/api/metrics', (_req, res) => res.json(snapshot()));
 app.use((err, _req, res, _next) => {

@@ -9,6 +9,7 @@ const links = [
   { to: '/generate', label: 'Generate Resume' },
   { to: '/jobs', label: 'Job Tracker' },
   { to: '/connections', label: 'Referrals' },
+  { to: '/opportunities', label: 'Opportunities' },
   { to: '/pricing', label: 'Pricing' },
   { to: '/billing', label: 'Usage' },
   { to: '/account', label: 'Account' },
