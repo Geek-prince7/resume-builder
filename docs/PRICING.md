@@ -11,4 +11,3 @@ Before launch, calculate contribution margin per plan as:
 Target at least 70% gross margin at normal usage and positive margin at the configured maximum. Provider prices change, so review the trailing 30-day p50, p90, and p99 model cost per subscriber monthly. If a model becomes more expensive, reduce output limits, route standard work to the lower-cost model, or change allowances before changing headline prices.
 
 Do not promise a 90–95% ATS match. The product reports evidence-based keyword and requirement coverage and clearly separates supported skills from missing JD skills. Unsupported experience or education must never be added to a resume.
-

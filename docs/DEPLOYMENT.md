@@ -46,4 +46,3 @@ Alert on API/AI 5xx rate, p95 latency, queue depth/oldest job age, failed genera
 ## Backup and recovery
 
 Enable continuous MongoDB backups with point-in-time recovery. Test restoration into a non-production project quarterly. Redis contains queue state and is not the source of truth; configure persistence for operational recovery but rely on MongoDB records for durable application state.
-
