@@ -47,15 +47,15 @@ function renderResumeHtml(content, templateId = 'classic', options = {}) {
 
   const section = (title, body) => body ? `<section><h2>${title}</h2>${body}</section>` : '';
   return `<!doctype html><html><head><meta charset="utf-8"><style>
-    *{box-sizing:border-box} @page{size:${options.pageSize === 'A4' ? 'A4' : 'Letter'};margin:0}
+    *{box-sizing:border-box} @page{size:${options.pageSize === 'A4' ? 'A4' : 'Letter'};margin:${pagePadding}}
     body{margin:0;background:white;color:${ink};font-family:Arial,Helvetica,sans-serif;font-size:${fontSize}pt;line-height:${compact ? 1.35 : 1.46}}
-    main{padding:${pagePadding}} h1{font-size:${compact ? 22 : 26}pt;line-height:1.05;margin:0 0 5px;color:${ink}}
+    main{padding:0} h1{font-size:${compact ? 22 : 26}pt;line-height:1.05;margin:0 0 5px;color:${ink}}
     .contact{font-size:8.6pt;color:#6b7280;border-bottom:2px solid ${accent};padding-bottom:9px;margin-bottom:12px;overflow-wrap:anywhere}
     .summary{background:${tint};border-left:3px solid ${accent};padding:8px 10px;margin-bottom:${sectionGap}px}
-    section{margin-top:${sectionGap}px} h2{color:${accent};font-size:10pt;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 7px;border-bottom:1px solid #d1d5db;padding-bottom:4px}
+    section{margin-top:${sectionGap}px} h2{color:${accent};font-size:10pt;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 7px;border-bottom:1px solid #d1d5db;padding-bottom:4px;break-after:avoid;page-break-after:avoid}
     .entry{margin-bottom:${compact ? 7 : 10}px}.row{display:flex;justify-content:space-between;gap:12px}.date{font-size:8.5pt;color:#6b7280;white-space:nowrap}.muted{font-size:8.3pt;color:#6b7280}.accent{color:${accent}}
     ul{margin:4px 0 0;padding-left:16px}li{margin:1.5px 0}p{margin:3px 0}.avoid-break{break-inside:avoid;page-break-inside:avoid}
-    .skills{margin:4px 0}.skills span,.tags span{display:inline-block;background:${tint};border:1px solid #e5e7eb;border-radius:9px;padding:1px 6px;margin:1px 2px;font-size:8.4pt}.tags{margin-top:4px}
+    .skills{margin:4px 0;break-inside:avoid;page-break-inside:avoid}.skills span,.tags span{display:inline-block;background:${tint};border:1px solid #e5e7eb;border-radius:9px;padding:1px 6px;margin:1px 2px;font-size:8.4pt}.tags{margin-top:4px}
     .languages{display:flex;gap:8px;flex-wrap:wrap}.languages span{background:${tint};padding:2px 7px;border-radius:8px}
   </style></head><body><main><h1>${escapeHtml(content.name)}</h1><div class="contact">${contact}</div>
   ${content.summary ? `<div class="summary">${escapeHtml(content.summary)}</div>` : ''}
