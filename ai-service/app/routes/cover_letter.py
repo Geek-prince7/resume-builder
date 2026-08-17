@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from app.schemas import CoverLetterRequest, CoverLetterResponse
 from app.services.ai_service import generate_cover_letter
+import asyncio
 
 router = APIRouter()
 
@@ -9,5 +10,7 @@ router = APIRouter()
 async def create_cover_letter(req: CoverLetterRequest):
     if not req.job_description.strip():
         raise HTTPException(status_code=400, detail="Job description is required")
-    result = generate_cover_letter(req.user_profile, req.job_description)
+    result = await asyncio.to_thread(
+        generate_cover_letter, req.user_profile, req.job_description
+    )
     return CoverLetterResponse(content=result["data"].get("content", ""), usage=result["usage"])

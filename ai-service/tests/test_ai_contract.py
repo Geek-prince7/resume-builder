@@ -1,4 +1,4 @@
-from app.services.ai_service import GENERATE_SYSTEM_PROMPT, _usage
+from app.services.ai_service import GENERATE_SYSTEM_PROMPT, _parse_json_response, _usage
 
 
 def test_truthful_prompt_forbids_unsupported_skills():
@@ -10,3 +10,7 @@ def test_truthful_prompt_forbids_unsupported_skills():
 def test_cost_estimate_uses_model_rates():
     usage = _usage("gemini", "gemini-3.1-pro-preview", 10_000, 3_000)
     assert usage["estimatedCostUsd"] == 0.056
+
+
+def test_json_parser_ignores_fences_and_trailing_text():
+    assert _parse_json_response('```json\n{"score": 92}\n```\nDone') == {"score": 92}

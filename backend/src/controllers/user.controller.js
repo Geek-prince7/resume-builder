@@ -4,7 +4,7 @@ const { retryWithJitter } = require('../utils/retryWithJitter');
 const { reserveQuota, completeQuota, releaseQuota } = require('../services/quota.service');
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
-const AI_REQUEST_TIMEOUT_MS = Number(process.env.AI_REQUEST_TIMEOUT_MS || 30000);
+const AI_REQUEST_TIMEOUT_MS = Number(process.env.AI_REQUEST_TIMEOUT_MS || 90000);
 const AI_RETRY_ATTEMPTS = Number(process.env.AI_RETRY_ATTEMPTS || 3);
 
 exports.getUser = async (req, res, next) => {

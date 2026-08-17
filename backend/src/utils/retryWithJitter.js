@@ -8,6 +8,9 @@ async function retryWithJitter(task, options = {}) {
   const shouldRetry =
     options.shouldRetry ||
     ((err) => {
+      // A timed-out generation may still be running in the AI service. Retrying it
+      // creates duplicate provider calls and can multiply both latency and cost.
+      if (err?.code === 'ECONNABORTED' || /timeout/i.test(err?.message || '')) return false;
       const status = err?.response?.status;
       if (!status) return true;
       return status >= 500 || status === 429;

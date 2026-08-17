@@ -7,7 +7,7 @@ const { renderResumeHtml } = require('../services/resumeHtml.service');
 const { createPdf } = require('../services/pdf.service');
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
-const AI_REQUEST_TIMEOUT_MS = Number(process.env.AI_REQUEST_TIMEOUT_MS || 30000);
+const AI_REQUEST_TIMEOUT_MS = Number(process.env.AI_REQUEST_TIMEOUT_MS || 90000);
 const AI_RETRY_ATTEMPTS = Number(process.env.AI_RETRY_ATTEMPTS || 3);
 
 exports.createJobDescription = async (req, res, next) => {

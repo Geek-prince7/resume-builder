@@ -15,7 +15,14 @@ async function createPdf(html, pageSize = 'Letter') {
   try {
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: 'networkidle0' });
-    return await page.pdf({ format: pageSize === 'A4' ? 'A4' : 'Letter', printBackground: true, preferCSSPageSize: true });
+    const pdf = await page.pdf({
+      format: pageSize === 'A4' ? 'A4' : 'Letter',
+      printBackground: true,
+      preferCSSPageSize: true,
+    });
+    // Puppeteer 25 returns Uint8Array. Express only treats Buffer as binary;
+    // sending Uint8Array directly can serialize it and corrupt the download.
+    return Buffer.isBuffer(pdf) ? pdf : Buffer.from(pdf);
   } finally {
     await browser.close();
   }

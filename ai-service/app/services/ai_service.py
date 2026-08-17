@@ -15,6 +15,21 @@ LLM_RETRY_JITTER_MS = int(os.getenv("LLM_RETRY_JITTER_MS", "300"))
 LLM_REQUEST_TIMEOUT_SECONDS = float(os.getenv("LLM_REQUEST_TIMEOUT_SECONDS", "45"))
 LLM_MAX_OUTPUT_TOKENS = int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "5000"))
 
+
+def _parse_json_response(text: str) -> dict:
+    """Parse the first complete JSON value, tolerating fences/trailing prose."""
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3]
+        cleaned = cleaned.strip()
+    start_candidates = [index for index in (cleaned.find("{"), cleaned.find("[")) if index >= 0]
+    if not start_candidates:
+        raise json.JSONDecodeError("No JSON object found", cleaned, 0)
+    value, _ = json.JSONDecoder().raw_decode(cleaned[min(start_candidates):])
+    return value
+
 MODEL_PRICING_PER_MILLION = {
     "gemini-3.1-pro-preview": (2.0, 12.0),
     "gemini-3.1-flash-lite": (0.25, 1.5),
@@ -179,7 +194,7 @@ def _openai_call(system_prompt: str, user_prompt: str, temperature: float) -> di
         timeout=LLM_REQUEST_TIMEOUT_SECONDS,
     )
     return {
-        "data": json.loads(response.choices[0].message.content),
+        "data": _parse_json_response(response.choices[0].message.content),
         "usage": _usage("openai", model, response.usage.prompt_tokens, response.usage.completion_tokens),
     }
 
@@ -205,11 +220,6 @@ def _gemini_call(system_prompt: str, user_prompt: str, temperature: float) -> di
     )
 
     text = response.text.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-        text = text.strip()
 
     metadata = response.usage_metadata
     input_tokens = int(getattr(metadata, "prompt_token_count", 0) or 0)
@@ -218,7 +228,7 @@ def _gemini_call(system_prompt: str, user_prompt: str, temperature: float) -> di
         + (getattr(metadata, "thoughts_token_count", 0) or 0)
     )
     return {
-        "data": json.loads(text),
+        "data": _parse_json_response(text),
         "usage": _usage("gemini", model, input_tokens, output_tokens),
     }
 
