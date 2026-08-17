@@ -91,3 +91,63 @@ exports.generateResume = async (req, res, next) => {
     next(err);
   }
 };
+
+const findOwnedResume = async (userId, jdId, resumeId) => {
+  const jd = await JobDescription.findOne({ _id: jdId, userId });
+  if (!jd) return {};
+  return { jd, resume: jd.generatedResumes.id(resumeId) };
+};
+
+exports.updateGeneratedResume = async (req, res, next) => {
+  try {
+    const { content } = req.body;
+    if (!content || typeof content !== 'object' || Array.isArray(content)) {
+      return res.status(400).json({ error: 'Valid resume content is required' });
+    }
+
+    const { jd, resume } = await findOwnedResume(
+      req.user.userId,
+      req.params.jdId,
+      req.params.resumeId
+    );
+    if (!jd) return res.status(404).json({ error: 'Job description not found' });
+    if (!resume) return res.status(404).json({ error: 'Generated resume not found' });
+
+    if (resume.content) {
+      resume.revisions.push({ content: resume.content });
+    }
+    resume.content = content;
+    resume.updatedAt = new Date();
+    await jd.save();
+
+    res.json(resume);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.restoreGeneratedResumeRevision = async (req, res, next) => {
+  try {
+    const { jd, resume } = await findOwnedResume(
+      req.user.userId,
+      req.params.jdId,
+      req.params.resumeId
+    );
+    if (!jd) return res.status(404).json({ error: 'Job description not found' });
+    if (!resume) return res.status(404).json({ error: 'Generated resume not found' });
+
+    const revision = resume.revisions.id(req.params.revisionId);
+    if (!revision) return res.status(404).json({ error: 'Resume revision not found' });
+
+    if (resume.content) {
+      resume.revisions.push({ content: resume.content });
+    }
+    resume.content = revision.content;
+    resume.updatedAt = new Date();
+    await jd.save();
+
+    res.json(resume);
+  } catch (err) {
+    next(err);
+  }
+};

@@ -44,6 +44,10 @@ export const getJobDescriptions = () => api.get('/job-descriptions');
 export const getJobDescription = (jdId) => api.get(`/job-descriptions/${jdId}`);
 export const generateResume = (jdId, templateId) =>
   api.post(`/job-descriptions/${jdId}/generate`, { templateId });
+export const updateGeneratedResume = (jdId, resumeId, content) =>
+  api.put(`/job-descriptions/${jdId}/resumes/${resumeId}`, { content });
+export const restoreGeneratedResumeRevision = (jdId, resumeId, revisionId) =>
+  api.post(`/job-descriptions/${jdId}/resumes/${resumeId}/revisions/${revisionId}/restore`);
 
 export const getTemplates = () => api.get('/templates');
 
