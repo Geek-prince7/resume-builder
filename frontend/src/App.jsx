@@ -11,6 +11,8 @@ import ResumePreview from './pages/ResumePreview';
 import Pricing from './pages/Pricing';
 import Billing from './pages/Billing';
 import ProfileVariants from './pages/ProfileVariants';
+import Account from './pages/Account';
+import { ForgotPassword, ResetPassword, VerifyEmail } from './pages/AccountTokenPage';
 import { UserProvider, useUser } from './context/UserContext';
 
 function AuthRedirect({ children }) {
@@ -28,6 +30,9 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<AuthRedirect><Login /></AuthRedirect>} />
           <Route path="/signup" element={<AuthRedirect><Signup /></AuthRedirect>} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/" element={<Dashboard />} />
@@ -37,6 +42,7 @@ export default function App() {
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/billing" element={<Billing />} />
               <Route path="/profile-variants" element={<ProfileVariants />} />
+              <Route path="/account" element={<Account />} />
             </Route>
           </Route>
         </Routes>

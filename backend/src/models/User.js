@@ -65,6 +65,8 @@ const userSchema = new mongoose.Schema(
       index: true,
     },
     email: { type: String, required: true, unique: true },
+    emailVerified: { type: Boolean, default: false },
+    emailVerifiedAt: Date,
     password: { type: String },
     authProvider: {
       type: String,

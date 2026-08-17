@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { getMe } from '../api';
+import { getMe, logoutSession } from '../api';
 
 const UserContext = createContext(null);
 
@@ -26,7 +26,8 @@ export function UserProvider({ children }) {
     localStorage.setItem('user', JSON.stringify(userData));
   }
 
-  function logout() {
+  async function logout() {
+    await logoutSession().catch(() => {});
     setToken(null);
     setUser(null);
     localStorage.removeItem('token');

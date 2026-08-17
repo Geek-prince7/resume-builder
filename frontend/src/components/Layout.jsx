@@ -9,6 +9,7 @@ const links = [
   { to: '/generate', label: 'Generate Resume' },
   { to: '/pricing', label: 'Pricing' },
   { to: '/billing', label: 'Usage' },
+  { to: '/account', label: 'Account' },
 ];
 
 export default function Layout() {
