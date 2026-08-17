@@ -91,6 +91,7 @@ export default function Login() {
               {submitting ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+          <Link to="/forgot-password" className="mt-4 block text-center text-sm text-indigo-600">Forgot password?</Link>
 
           <p className="text-center text-sm text-gray-500 mt-6">
             Don&apos;t have an account?{' '}

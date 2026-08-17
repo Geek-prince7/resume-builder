@@ -5,12 +5,35 @@ import time
 import logging
 
 AI_PROVIDER = os.getenv("AI_PROVIDER", "openai")  # "openai" or "gemini"
+AI_FALLBACK_PROVIDER = os.getenv("AI_FALLBACK_PROVIDER", "").lower()
+PROMPT_VERSION = os.getenv("PROMPT_VERSION", "2026-08-truthful-v1")
 LOGGER = logging.getLogger(__name__)
 LLM_RETRY_ATTEMPTS = int(os.getenv("LLM_RETRY_ATTEMPTS", "3"))
 LLM_RETRY_BASE_DELAY_MS = int(os.getenv("LLM_RETRY_BASE_DELAY_MS", "250"))
 LLM_RETRY_MAX_DELAY_MS = int(os.getenv("LLM_RETRY_MAX_DELAY_MS", "3000"))
 LLM_RETRY_JITTER_MS = int(os.getenv("LLM_RETRY_JITTER_MS", "300"))
 LLM_REQUEST_TIMEOUT_SECONDS = float(os.getenv("LLM_REQUEST_TIMEOUT_SECONDS", "45"))
+LLM_MAX_OUTPUT_TOKENS = int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "5000"))
+
+MODEL_PRICING_PER_MILLION = {
+    "gemini-3.1-pro-preview": (2.0, 12.0),
+    "gemini-3.1-flash-lite": (0.25, 1.5),
+    "gemini-3.5-flash-lite": (0.30, 2.5),
+    "gpt-4o-mini": (0.15, 0.60),
+    "gpt-4.1-mini": (0.40, 1.60),
+}
+
+
+def _usage(provider: str, model: str, input_tokens: int, output_tokens: int) -> dict:
+    input_rate, output_rate = MODEL_PRICING_PER_MILLION.get(model, (0.0, 0.0))
+    cost = (input_tokens * input_rate + output_tokens * output_rate) / 1_000_000
+    return {
+        "provider": provider,
+        "model": model,
+        "inputTokens": input_tokens,
+        "outputTokens": output_tokens,
+        "estimatedCostUsd": round(cost, 8),
+    }
 
 PARSE_SYSTEM_PROMPT = """You are an expert resume parser. Extract structured data from the resume text provided.
 Return a JSON object with these fields (omit fields if not found):
@@ -66,17 +89,17 @@ Return ONLY valid JSON, no markdown fences or extra text."""
 
 GENERATE_SYSTEM_PROMPT = """You are an elite ATS-optimization expert and resume writer. Your goal is to produce a resume that achieves a 90-95% match score against the provided job description.
 
-CRITICAL RULES FOR MAXIMUM JD MATCHING:
-1. SKILLS MERGING: Include ALL skills, technologies, tools, and frameworks mentioned in the JD. Combine them with the user's existing skills. If the JD mentions a skill the user doesn't have but could reasonably claim (adjacent/related technology), add it. Categorize them to match JD terminology exactly.
-2. KEYWORD SATURATION: Mirror the exact keywords, phrases, and terminology from the JD throughout the resume — in the summary, experience bullet points, skills section, and project descriptions. ATS systems do literal keyword matching.
+CRITICAL RULES FOR MAXIMUM TRUTHFUL JD MATCHING:
+1. SKILL EVIDENCE: Include a skill in the resume only when it exists in the user's profile, experience, projects, certifications, or achievements. Never add a JD skill merely because it is adjacent or plausible. Put unverified JD requirements in `atsReport.missingSkills`, not in the resume.
+2. KEYWORD ALIGNMENT: Mirror JD wording only where the user's supplied evidence supports it. Never invent qualifications, outcomes, tools, responsibilities, metrics, or years of experience.
 3. SUMMARY: Write a professional summary that reads like a direct answer to the JD. Use the exact job title from the JD. Weave in the top 5-6 keywords/requirements from the JD naturally.
-4. EXPERIENCE BULLETS: Rewrite every bullet point to incorporate JD keywords. Use strong action verbs + quantifiable metrics. Each role should address at least 2-3 JD requirements directly.
+4. EXPERIENCE BULLETS: Rewrite bullets for clarity and relevance, but preserve factual meaning. Use metrics only when the original profile contains those metrics.
 5. SPELLING AND GRAMMAR: Every sentence must be grammatically correct with accurate spelling.
 6. REORDER SECTIONS: Put the most JD-relevant sections first. If skills are heavily emphasized in the JD, skills section should come right after summary.
 7. PROJECT DESCRIPTIONS: Reframe project descriptions to highlight technologies and outcomes that match the JD.
 8. NEVER FABRICATE DATA: Only include sections that exist in the user's profile. If the user has no education entries, do NOT add an education section. If the user has no certifications, do NOT add certifications. If the user has no projects, do NOT add projects. Never invent companies, degrees, institutions, or any factual data that is not present in the user profile.
 9. DATES: All dates must be in "YYYY-MM" format (e.g. "2020-01", "2023-06"). Never include time or day components.
-10. The score MUST reflect actual keyword coverage. Aim for 90-95.
+10. MATCH SCORE: Calculate the score honestly from evidenced requirements. Do not force it to 90-95. A lower truthful score is required when qualifications are missing.
 
 Return a JSON object with:
 {
@@ -113,10 +136,25 @@ Return a JSON object with:
     ],
     "certifications": [{ "name": "string", "issuer": "string" }],
     "projects": [{ "name": "string", "description": "string", "technologies": ["string"] }]
+    ,"awards": [{ "title": "string", "issuer": "string", "description": "string" }]
+    ,"publications": [{ "title": "string", "publisher": "string", "description": "string" }]
+    ,"volunteerWork": [{ "organization": "string", "role": "string", "highlights": ["string"] }]
+    ,"patents": [{ "title": "string", "number": "string" }]
+    ,"customSections": [{ "title": "string", "items": ["string"] }]
   },
-  "score": number (90-95, reflecting actual keyword match percentage against JD)
+  "score": number (0-100, honest evidenced match percentage),
+  "atsReport": {
+    "confirmedSkills": ["JD skills directly supported by profile evidence"],
+    "missingSkills": ["JD skills not supported by the profile"],
+    "matchedKeywords": ["matched JD keywords"],
+    "missingKeywords": ["important unmatched JD keywords"],
+    "strengths": ["evidence-backed strengths"],
+    "recommendations": ["truthful steps the user can take; never suggest falsely claiming experience"]
+  }
 }
 Return ONLY valid JSON, no markdown fences or extra text."""
+
+COVER_LETTER_SYSTEM_PROMPT = """Write a concise, professional cover letter using only facts supplied in the user profile. Connect evidenced experience to the job description, acknowledge no unsupported skills, and never invent employers, metrics, education, or qualifications. Return JSON only: {"content": "the complete cover letter"}."""
 
 
 # ---------------------------------------------------------------------------
@@ -137,9 +175,13 @@ def _openai_call(system_prompt: str, user_prompt: str, temperature: float) -> di
         ],
         temperature=temperature,
         response_format={"type": "json_object"},
+        max_tokens=LLM_MAX_OUTPUT_TOKENS,
         timeout=LLM_REQUEST_TIMEOUT_SECONDS,
     )
-    return json.loads(response.choices[0].message.content)
+    return {
+        "data": json.loads(response.choices[0].message.content),
+        "usage": _usage("openai", model, response.usage.prompt_tokens, response.usage.completion_tokens),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -158,6 +200,7 @@ def _gemini_call(system_prompt: str, user_prompt: str, temperature: float) -> di
         config=genai.types.GenerateContentConfig(
             temperature=temperature,
             response_mime_type="application/json",
+            max_output_tokens=LLM_MAX_OUTPUT_TOKENS,
         ),
     )
 
@@ -168,7 +211,16 @@ def _gemini_call(system_prompt: str, user_prompt: str, temperature: float) -> di
             text = text[:-3]
         text = text.strip()
 
-    return json.loads(text)
+    metadata = response.usage_metadata
+    input_tokens = int(getattr(metadata, "prompt_token_count", 0) or 0)
+    output_tokens = int(
+        (getattr(metadata, "candidates_token_count", 0) or 0)
+        + (getattr(metadata, "thoughts_token_count", 0) or 0)
+    )
+    return {
+        "data": json.loads(text),
+        "usage": _usage("gemini", model, input_tokens, output_tokens),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -196,12 +248,28 @@ def _retry_with_jitter(task):
 
 def _call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.2) -> dict:
     provider = AI_PROVIDER.lower()
-    if provider == "gemini":
-        return _retry_with_jitter(lambda: _gemini_call(system_prompt, user_prompt, temperature))
-    elif provider == "openai":
-        return _retry_with_jitter(lambda: _openai_call(system_prompt, user_prompt, temperature))
-    else:
-        raise ValueError(f"Unknown AI_PROVIDER: '{provider}'. Use 'openai' or 'gemini'.")
+    def invoke(selected):
+        if selected == "mock":
+            if "cover letter" in system_prompt.lower():
+                data = {"content": "Dear Hiring Manager,\n\nI am interested in this opportunity.\n\nSincerely,\nTest User"}
+            elif "resume parser" in system_prompt.lower():
+                data = {"name": "Test User", "skills": []}
+            else:
+                data = {"content": {"name": "Test User", "email": "test@example.com", "summary": "Software engineer focused on reliable systems.", "experiences": [], "skills": [{"name": "Node.js", "category": "Backend"}], "education": [], "projects": [], "certifications": []}, "score": 75, "atsReport": {"confirmedSkills": ["Node.js"], "missingSkills": [], "matchedKeywords": ["Node.js"], "missingKeywords": [], "strengths": ["Backend development"], "recommendations": []}}
+            return {"data": data, "usage": {"provider": "mock", "model": "mock", "inputTokens": 0, "outputTokens": 0, "estimatedCostUsd": 0}}
+        if selected == "gemini": return _retry_with_jitter(lambda: _gemini_call(system_prompt, user_prompt, temperature))
+        if selected == "openai": return _retry_with_jitter(lambda: _openai_call(system_prompt, user_prompt, temperature))
+        raise ValueError(f"Unknown AI provider: '{selected}'")
+    try:
+        result = invoke(provider)
+    except Exception:
+        if not AI_FALLBACK_PROVIDER or AI_FALLBACK_PROVIDER == provider: raise
+        LOGGER.exception("Primary AI provider exhausted retries; using fallback", extra={"primary": provider, "fallback": AI_FALLBACK_PROVIDER})
+        result = invoke(AI_FALLBACK_PROVIDER)
+        result["usage"]["fallbackUsed"] = True
+        result["usage"]["primaryProvider"] = provider
+    result["usage"]["promptVersion"] = PROMPT_VERSION
+    return result
 
 
 def parse_resume_text(resume_text: str) -> dict:
@@ -218,4 +286,12 @@ def generate_tailored_resume(user_profile: dict, job_description: str) -> dict:
         GENERATE_SYSTEM_PROMPT,
         f"User Profile:\n{user_json}\n\nJob Description:\n{job_description}\n\nCreate a tailored resume for this job.",
         temperature=0.3,
+    )
+
+
+def generate_cover_letter(user_profile: dict, job_description: str) -> dict:
+    return _call_llm(
+        COVER_LETTER_SYSTEM_PROMPT,
+        f"User Profile:\n{json.dumps(user_profile, indent=2, default=str)}\n\nJob Description:\n{job_description}",
+        temperature=0.35,
     )

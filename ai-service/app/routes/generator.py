@@ -22,11 +22,17 @@ async def generate_resume(req: GenerateRequest):
     )
     result = generate_tailored_resume(req.user_profile, req.job_description)
 
-    content = result.get("content", result)
-    score = result.get("score", 0)
+    generated = result["data"]
+    content = generated.get("content", generated)
+    score = generated.get("score", 0)
 
     logger.info(
         "Resume generation completed",
         extra={"template_id": req.template_id, "score": score},
     )
-    return GenerateResponse(content=content, score=score)
+    return GenerateResponse(
+        content=content,
+        score=score,
+        ats_report=generated.get("atsReport", {}),
+        usage=result["usage"],
+    )

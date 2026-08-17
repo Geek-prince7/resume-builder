@@ -52,6 +52,7 @@ MONGODB_PORT=27018 AI_SERVICE_PORT=8001 BACKEND_PORT=3001 FRONTEND_PORT=5173 doc
 Notes:
 - MongoDB data is stored in Docker volume `mongo-data` (persists across restarts).
 - Inside Docker, backend always connects to `mongodb://mongodb:27017/resume-builder` (compose overrides host `.env` Mongo URI).
+- Redis is included for background AI jobs; no separate local Redis install is required.
 
 ## Local Quick Start (without Docker)
 
@@ -92,6 +93,29 @@ Security controls enabled:
 - Backend: `helmet`, request rate limiting, auth rate limiting, NoSQL sanitization, HTTP param pollution protection, compression, strict CORS origin allowlist.
 - AI service: in-memory per-IP rate limiting for `/parse-resume` and `/generate-resume`, trusted host validation, secure response headers, request-size guards.
 - AI/network resilience: retry with exponential backoff + jitter for outbound AI calls on both backend and AI service.
+
+## Billing and quotas
+
+The app includes Free, Starter, Pro, and Career plans. AI generations/iterations are metered as AI actions and also protected by monthly token ceilings; manual edits and PDF downloads are free. Configure Stripe Checkout by creating three recurring monthly prices and setting `STRIPE_PRICE_STARTER`, `STRIPE_PRICE_PRO`, and `STRIPE_PRICE_CAREER` in `backend/.env`. See [pricing economics](docs/PRICING.md).
+
+For local Stripe webhook testing:
+
+```bash
+stripe listen --forward-to localhost:3001/api/billing/webhook
+```
+
+Copy the printed `whsec_...` value to `STRIPE_WEBHOOK_SECRET`.
+
+## Validation and deployment
+
+```bash
+(cd backend && npm test)
+(cd frontend && npm test && npm run build)
+(cd ai-service && pytest -q)
+(cd frontend && npx playwright install chromium && npm run test:e2e)
+```
+
+CI runs service tests and a Docker-backed signup-to-PDF browser flow. See the [deployment runbook](docs/DEPLOYMENT.md) for environment promotion, secret placement, monitoring, and recovery.
 
 ## Services
 

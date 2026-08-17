@@ -9,6 +9,14 @@ const generatedResumeSchema = new mongoose.Schema({
   templateId: { type: String, required: true },
   content: { type: mongoose.Schema.Types.Mixed },
   score: { type: Number, min: 0, max: 100 },
+  atsReport: {
+    confirmedSkills: [String],
+    missingSkills: [String],
+    matchedKeywords: [String],
+    missingKeywords: [String],
+    strengths: [String],
+    recommendations: [String],
+  },
   revisions: { type: [resumeRevisionSchema], default: [] },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
@@ -23,6 +31,7 @@ const jobDescriptionSchema = new mongoose.Schema(
     },
     company: String,
     role: String,
+    profileVariantId: String,
     description: { type: String, required: true },
     status: {
       type: String,
@@ -30,6 +39,11 @@ const jobDescriptionSchema = new mongoose.Schema(
       default: 'pending',
     },
     generatedResumes: [generatedResumeSchema],
+    coverLetters: [{
+      content: { type: String, required: true },
+      profileVariantId: String,
+      createdAt: { type: Date, default: Date.now },
+    }],
   },
   { timestamps: true }
 );

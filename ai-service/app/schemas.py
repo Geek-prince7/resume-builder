@@ -81,3 +81,20 @@ class GenerateRequest(BaseModel):
 class GenerateResponse(BaseModel):
     content: dict
     score: int
+    ats_report: dict = {}
+    usage: dict = {}
+
+
+class ParseResponse(BaseModel):
+    data: dict
+    usage: dict = {}
+
+
+class CoverLetterRequest(BaseModel):
+    user_profile: dict
+    job_description: str
+
+
+class CoverLetterResponse(BaseModel):
+    content: str
+    usage: dict = {}

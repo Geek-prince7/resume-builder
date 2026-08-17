@@ -1,40 +1,9 @@
-const express = require('express');
-const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
-const { logger, requestLogger, APP_ENV } = require('./logger');
-const { corsOptions, applySecurityMiddleware } = require('./middleware/security');
-
-const authRoutes = require('./routes/auth.routes');
-const userRoutes = require('./routes/user.routes');
-const jobDescriptionRoutes = require('./routes/jobDescription.routes');
-const templateRoutes = require('./routes/template.routes');
-
-const app = express();
+const { logger, APP_ENV } = require('./logger');
+const app = require('./app');
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/resume-builder';
-
-applySecurityMiddleware(app);
-app.use(cors(corsOptions));
-app.use(express.json({ limit: process.env.BODY_LIMIT || '2mb' }));
-app.use(express.urlencoded({ extended: true, limit: process.env.BODY_LIMIT || '2mb' }));
-app.use(requestLogger);
-
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/job-descriptions', jobDescriptionRoutes);
-app.use('/api/templates', templateRoutes);
-
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'resume-builder-backend' });
-});
-
-app.use((err, _req, res, _next) => {
-  logger.error('Unhandled backend error', { message: err.message, stack: err.stack });
-  res.status(err.status || 500).json({
-    error: err.message || 'Internal server error',
-  });
-});
 
 mongoose
   .connect(MONGODB_URI)

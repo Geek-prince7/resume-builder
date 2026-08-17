@@ -2,6 +2,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.services.file_parser import extract_text
 from app.services.ai_service import parse_resume_text
 from app.logging_config import get_logger
+from app.schemas import ParseResponse
 import os
 
 router = APIRouter()
@@ -10,7 +11,7 @@ MAX_RESUME_FILE_SIZE_BYTES = int(os.getenv("MAX_RESUME_FILE_SIZE_BYTES", str(5 *
 MAX_RESUME_TEXT_CHARS = int(os.getenv("MAX_RESUME_TEXT_CHARS", "120000"))
 
 
-@router.post("/parse-resume")
+@router.post("/parse-resume", response_model=ParseResponse)
 async def parse_resume(file: UploadFile = File(...)):
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file provided")
@@ -37,6 +38,6 @@ async def parse_resume(file: UploadFile = File(...)):
     if len(text) > MAX_RESUME_TEXT_CHARS:
         text = text[:MAX_RESUME_TEXT_CHARS]
 
-    parsed = parse_resume_text(text)
+    result = parse_resume_text(text)
     logger.info("Resume parse completed", extra={"filename": file.filename})
-    return parsed
+    return ParseResponse(data=result["data"], usage=result["usage"])
