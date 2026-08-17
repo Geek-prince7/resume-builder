@@ -1,5 +1,7 @@
 const winston = require('winston');
 const WinstonCloudWatch = require('winston-cloudwatch');
+const crypto = require('crypto');
+const { recordRequest } = require('./metrics');
 
 const APP_ENV = process.env.APP_ENV || 'dev';
 const isCloudEnv = APP_ENV === 'testapp' || APP_ENV === 'prod';
@@ -56,13 +58,18 @@ if (APP_ENV === 'dev') {
 }
 
 function requestLogger(req, res, next) {
+  req.id = req.headers['x-request-id'] || crypto.randomUUID();
+  res.setHeader('X-Request-Id', req.id);
   const start = Date.now();
   res.on('finish', () => {
+    const durationMs = Date.now() - start;
+    recordRequest(durationMs, res.statusCode);
     logger.info('HTTP request completed', {
+      requestId: req.id,
       method: req.method,
       path: req.originalUrl,
       statusCode: res.statusCode,
-      durationMs: Date.now() - start,
+      durationMs,
       ip: req.ip,
     });
   });

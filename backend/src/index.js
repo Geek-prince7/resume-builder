@@ -12,6 +12,7 @@ const templateRoutes = require('./routes/template.routes');
 const billingRoutes = require('./routes/billing.routes');
 const profileVariantRoutes = require('./routes/profileVariant.routes');
 const billingController = require('./controllers/billing.controller');
+const { snapshot } = require('./metrics');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -34,6 +35,7 @@ app.use('/api/profile-variants', profileVariantRoutes);
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'resume-builder-backend' });
 });
+app.get('/api/metrics', (_req, res) => res.json(snapshot()));
 
 app.use((err, _req, res, _next) => {
   logger.error('Unhandled backend error', { message: err.message, stack: err.stack });

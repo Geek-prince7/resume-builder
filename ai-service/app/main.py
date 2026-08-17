@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from time import perf_counter
 import os
 import time
+import uuid
 from collections import defaultdict, deque
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
@@ -42,6 +43,7 @@ app.include_router(cover_letter.router)
 
 @app.middleware("http")
 async def log_requests(request, call_next):
+    request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
     # Basic in-memory rate limiter for expensive AI endpoints.
     if request.url.path in ("/parse-resume", "/generate-resume"):
         ip = request.client.host if request.client else "unknown"
@@ -61,6 +63,7 @@ async def log_requests(request, call_next):
     response = await call_next(request)
     duration_ms = round((perf_counter() - start) * 1000, 2)
     response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Request-Id"] = request_id
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["X-RateLimit-Window"] = str(RATE_LIMIT_WINDOW_SECONDS)
@@ -72,6 +75,7 @@ async def log_requests(request, call_next):
             "path": request.url.path,
             "status_code": response.status_code,
             "duration_ms": duration_ms,
+            "request_id": request_id,
         },
     )
     return response

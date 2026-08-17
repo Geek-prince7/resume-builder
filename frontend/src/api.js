@@ -84,5 +84,7 @@ export const generateCoverLetter = (jdId, profileVariantId) =>
   api.post(`/job-descriptions/${jdId}/cover-letter`, { profileVariantId });
 export const downloadResumePdf = (jdId, resumeId, options) =>
   api.get(`/job-descriptions/${jdId}/resumes/${resumeId}/pdf`, { params: options, responseType: 'blob' });
+export const enqueueResumeGeneration = (jdId, templateId) => api.post(`/job-descriptions/${jdId}/generate-async`, { templateId });
+export const getGenerationJob = (jobId) => api.get(`/job-descriptions/jobs/${jobId}`);
 
 export default api;

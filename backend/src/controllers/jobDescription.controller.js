@@ -76,7 +76,7 @@ exports.generateResume = async (req, res, next) => {
             job_description: jd.description,
             template_id: templateId,
           },
-          { timeout: AI_REQUEST_TIMEOUT_MS }
+          { timeout: AI_REQUEST_TIMEOUT_MS, headers: { 'X-Request-Id': req.id } }
         ),
       { retries: AI_RETRY_ATTEMPTS }
     );
@@ -141,7 +141,7 @@ exports.generateCoverLetter = async (req, res, next) => {
       () => axios.post(`${AI_SERVICE_URL}/generate-cover-letter`, {
         user_profile: userProfile,
         job_description: jd.description,
-      }, { timeout: AI_REQUEST_TIMEOUT_MS }),
+      }, { timeout: AI_REQUEST_TIMEOUT_MS, headers: { 'X-Request-Id': req.id } }),
       { retries: AI_RETRY_ATTEMPTS }
     );
     await completeQuota(usageEvent, aiResponse.data.usage);

@@ -5,6 +5,8 @@ import time
 import logging
 
 AI_PROVIDER = os.getenv("AI_PROVIDER", "openai")  # "openai" or "gemini"
+AI_FALLBACK_PROVIDER = os.getenv("AI_FALLBACK_PROVIDER", "").lower()
+PROMPT_VERSION = os.getenv("PROMPT_VERSION", "2026-08-truthful-v1")
 LOGGER = logging.getLogger(__name__)
 LLM_RETRY_ATTEMPTS = int(os.getenv("LLM_RETRY_ATTEMPTS", "3"))
 LLM_RETRY_BASE_DELAY_MS = int(os.getenv("LLM_RETRY_BASE_DELAY_MS", "250"))
@@ -246,12 +248,20 @@ def _retry_with_jitter(task):
 
 def _call_llm(system_prompt: str, user_prompt: str, temperature: float = 0.2) -> dict:
     provider = AI_PROVIDER.lower()
-    if provider == "gemini":
-        return _retry_with_jitter(lambda: _gemini_call(system_prompt, user_prompt, temperature))
-    elif provider == "openai":
-        return _retry_with_jitter(lambda: _openai_call(system_prompt, user_prompt, temperature))
-    else:
-        raise ValueError(f"Unknown AI_PROVIDER: '{provider}'. Use 'openai' or 'gemini'.")
+    def invoke(selected):
+        if selected == "gemini": return _retry_with_jitter(lambda: _gemini_call(system_prompt, user_prompt, temperature))
+        if selected == "openai": return _retry_with_jitter(lambda: _openai_call(system_prompt, user_prompt, temperature))
+        raise ValueError(f"Unknown AI provider: '{selected}'")
+    try:
+        result = invoke(provider)
+    except Exception:
+        if not AI_FALLBACK_PROVIDER or AI_FALLBACK_PROVIDER == provider: raise
+        LOGGER.exception("Primary AI provider exhausted retries; using fallback", extra={"primary": provider, "fallback": AI_FALLBACK_PROVIDER})
+        result = invoke(AI_FALLBACK_PROVIDER)
+        result["usage"]["fallbackUsed"] = True
+        result["usage"]["primaryProvider"] = provider
+    result["usage"]["promptVersion"] = PROMPT_VERSION
+    return result
 
 
 def parse_resume_text(resume_text: str) -> dict:

@@ -50,8 +50,8 @@ exports.parseResume = async (req, res, next) => {
     const aiResponse = await retryWithJitter(
       () =>
         axios.post(`${AI_SERVICE_URL}/parse-resume`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
           timeout: AI_REQUEST_TIMEOUT_MS,
+          headers: { 'Content-Type': 'multipart/form-data', 'X-Request-Id': req.id },
         }),
       { retries: AI_RETRY_ATTEMPTS }
     );

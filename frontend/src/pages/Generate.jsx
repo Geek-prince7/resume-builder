@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { getTemplates, createJobDescription, generateResume, generateCoverLetter, getProfileVariants } from '../api';
+import { getTemplates, createJobDescription, generateResume, generateCoverLetter, getProfileVariants, enqueueResumeGeneration, getGenerationJob } from '../api';
 import AdSlot from '../components/AdSlot';
 
 export default function Generate() {
@@ -15,6 +15,17 @@ export default function Generate() {
   const [variants, setVariants] = useState([]);
   const [profileVariantId, setProfileVariantId] = useState('');
   const [includeCoverLetter, setIncludeCoverLetter] = useState(false);
+  const [backgroundGeneration, setBackgroundGeneration] = useState(false);
+
+  const waitForJob = async (jobId) => {
+    for (let attempt = 0; attempt < 120; attempt += 1) {
+      const response = await getGenerationJob(jobId);
+      if (response.data.state === 'completed') return response.data;
+      if (response.data.state === 'failed') throw new Error(response.data.error || 'Background generation failed');
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+    throw new Error('Background generation timed out');
+  };
 
   useEffect(() => {
     getTemplates()
@@ -42,7 +53,12 @@ export default function Generate() {
       const jdRes = await createJobDescription({ company, role, description, profileVariantId });
       const jdId = jdRes.data._id;
 
-      await generateResume(jdId, selectedTemplate, profileVariantId);
+      if (backgroundGeneration && !profileVariantId) {
+        const queued = await enqueueResumeGeneration(jdId, selectedTemplate);
+        await waitForJob(queued.data.jobId);
+      } else {
+        await generateResume(jdId, selectedTemplate, profileVariantId);
+      }
       if (includeCoverLetter) await generateCoverLetter(jdId, profileVariantId);
       toast.success('Resume generated!');
       navigate(`/resume/${jdId}`);
@@ -104,6 +120,7 @@ export default function Generate() {
               <input type="checkbox" checked={includeCoverLetter} onChange={(e) => setIncludeCoverLetter(e.target.checked)} />
               Generate a tailored cover letter (uses 1 additional AI action)
             </label>
+            {!profileVariantId && <label className="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked={backgroundGeneration} onChange={(e) => setBackgroundGeneration(e.target.checked)} />Run generation as a resilient background job</label>}
           </div>
         </section>
 
