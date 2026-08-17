@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useUser } from '../context/UserContext';
-import { getUser, getJobDescriptions } from '../api';
+import { getUser, getJobDescriptions, getJobTrackerSummary, getDueConnections } from '../api';
 import AdSlot from '../components/AdSlot';
 
 export default function Dashboard() {
@@ -11,12 +11,16 @@ export default function Dashboard() {
   const [profile, setProfile] = useState(null);
   const [jds, setJds] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [tracker, setTracker] = useState(null);
+  const [referralsDue, setReferralsDue] = useState(0);
 
   useEffect(() => {
-    Promise.all([getUser(), getJobDescriptions()])
-      .then(([userRes, jdRes]) => {
+    Promise.all([getUser(), getJobDescriptions(), getJobTrackerSummary(), getDueConnections()])
+      .then(([userRes, jdRes, trackerRes, dueRes]) => {
         setProfile(userRes.data);
         setJds(jdRes.data);
+        setTracker(trackerRes.data);
+        setReferralsDue(dueRes.data.length);
       })
       .catch(() => toast.error('Failed to load data'))
       .finally(() => setLoading(false));
@@ -77,6 +81,21 @@ export default function Dashboard() {
         </div>
       )}
 
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
+        {[
+          ['Applications', tracker?.applied || 0],
+          ['Last 7 days', tracker?.appliedLast7Days || 0],
+          ['Interviews', tracker?.byStatus?.interviewing || 0],
+          ['Offers', tracker?.byStatus?.offer || 0],
+          ['Referral follow-ups', referralsDue],
+        ].map(([label, value]) => (
+          <div key={label} className="bg-white rounded-xl border border-gray-200 p-4">
+            <p className="text-2xl font-bold text-gray-900">{value}</p>
+            <p className="text-xs text-gray-500 mt-1">{label}</p>
+          </div>
+        ))}
+      </div>
+
       <AdSlot
         slot={import.meta.env.VITE_ADSENSE_SLOT_DASHBOARD}
         className="bg-white rounded-lg border border-gray-200 p-2 mb-8"
@@ -84,7 +103,7 @@ export default function Dashboard() {
       />
 
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Past Job Descriptions</h2>
+        <div className="flex items-center justify-between mb-4"><h2 className="text-lg font-semibold text-gray-900">Recent jobs</h2><Link to="/jobs" className="text-sm font-medium text-indigo-600">Open tracker</Link></div>
         {jds.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
             <p className="text-gray-500 mb-4">No job descriptions yet.</p>

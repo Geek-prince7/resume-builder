@@ -7,6 +7,8 @@ const links = [
   { to: '/profile', label: 'Profile' },
   { to: '/profile-variants', label: 'Variants' },
   { to: '/generate', label: 'Generate Resume' },
+  { to: '/jobs', label: 'Job Tracker' },
+  { to: '/connections', label: 'Referrals' },
   { to: '/pricing', label: 'Pricing' },
   { to: '/billing', label: 'Usage' },
   { to: '/account', label: 'Account' },

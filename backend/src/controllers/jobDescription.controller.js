@@ -12,23 +12,71 @@ const AI_RETRY_ATTEMPTS = Number(process.env.AI_RETRY_ATTEMPTS || 3);
 
 exports.createJobDescription = async (req, res, next) => {
   try {
-    const { company, role, description, profileVariantId } = req.body;
+    const { company, role, jobUrl, location, source, description, profileVariantId, applicationStatus } = req.body;
     if (!description) {
       return res.status(400).json({ error: 'Job description text is required' });
+    }
+    if (jobUrl && !/^https?:\/\//i.test(jobUrl)) {
+      return res.status(400).json({ error: 'Job URL must start with http:// or https://' });
     }
 
     const jd = new JobDescription({
       userId: req.user.userId,
       company,
       role,
+      jobUrl,
+      location,
+      source,
       description,
       profileVariantId,
+      applicationStatus: applicationStatus || 'saved',
+      appliedAt: applicationStatus === 'applied' ? new Date() : undefined,
     });
     await jd.save();
     res.status(201).json(jd);
   } catch (err) {
     next(err);
   }
+};
+
+exports.updateApplication = async (req, res, next) => {
+  try {
+    const allowed = ['applicationStatus', 'appliedAt', 'nextAction', 'nextActionAt', 'applicationNotes', 'jobUrl', 'location', 'source'];
+    const updates = Object.fromEntries(allowed.filter((key) => key in req.body).map((key) => [key, req.body[key]]));
+    if (updates.jobUrl && !/^https?:\/\//i.test(updates.jobUrl)) {
+      return res.status(400).json({ error: 'Job URL must start with http:// or https://' });
+    }
+    if (updates.applicationStatus === 'applied' && !updates.appliedAt) updates.appliedAt = new Date();
+    const jd = await JobDescription.findOneAndUpdate(
+      { _id: req.params.jdId, userId: req.user.userId },
+      updates,
+      { new: true, runValidators: true }
+    );
+    if (!jd) return res.status(404).json({ error: 'Job description not found' });
+    res.json(jd);
+  } catch (err) { next(err); }
+};
+
+exports.getTrackerSummary = async (req, res, next) => {
+  try {
+    const jobs = await JobDescription.find({ userId: req.user.userId }).select('applicationStatus appliedAt nextActionAt generatedResumes createdAt');
+    const byStatus = jobs.reduce((result, job) => {
+      result[job.applicationStatus || 'saved'] = (result[job.applicationStatus || 'saved'] || 0) + 1;
+      return result;
+    }, {});
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 86400000);
+    const monthAgo = new Date(now.getTime() - 30 * 86400000);
+    res.json({
+      total: jobs.length,
+      applied: jobs.filter((job) => job.appliedAt).length,
+      appliedLast7Days: jobs.filter((job) => job.appliedAt >= weekAgo).length,
+      appliedLast30Days: jobs.filter((job) => job.appliedAt >= monthAgo).length,
+      resumes: jobs.reduce((sum, job) => sum + job.generatedResumes.length, 0),
+      followUpsDue: jobs.filter((job) => job.nextActionAt && job.nextActionAt <= now).length,
+      byStatus,
+    });
+  } catch (err) { next(err); }
 };
 
 exports.getJobDescriptions = async (req, res, next) => {

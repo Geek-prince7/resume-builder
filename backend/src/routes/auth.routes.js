@@ -9,6 +9,7 @@ const AccountToken = require('../models/AccountToken');
 const JobDescription = require('../models/JobDescription');
 const ProfileVariant = require('../models/ProfileVariant');
 const UsageEvent = require('../models/UsageEvent');
+const ConnectionRequest = require('../models/ConnectionRequest');
 const { sendAccountEmail } = require('../services/email.service');
 
 const router = express.Router();
@@ -181,12 +182,12 @@ router.post('/reset-password', authRateLimiter, async (req, res) => {
 });
 
 router.get('/export', authenticate, async (req, res) => {
-  const [jobDescriptions, profileVariants, usageEvents] = await Promise.all([JobDescription.find({ userId: req.user.userId }), ProfileVariant.find({ userId: req.user.userId }), UsageEvent.find({ userId: req.user.userId })]);
-  res.set('Content-Disposition', 'attachment; filename="resumeai-data.json"'); res.json({ user: req.user, jobDescriptions, profileVariants, usageEvents, exportedAt: new Date() });
+  const [jobDescriptions, profileVariants, usageEvents, connectionRequests] = await Promise.all([JobDescription.find({ userId: req.user.userId }), ProfileVariant.find({ userId: req.user.userId }), UsageEvent.find({ userId: req.user.userId }), ConnectionRequest.find({ userId: req.user.userId })]);
+  res.set('Content-Disposition', 'attachment; filename="resumeai-data.json"'); res.json({ user: req.user, jobDescriptions, profileVariants, usageEvents, connectionRequests, exportedAt: new Date() });
 });
 
 router.delete('/account', authenticate, async (req, res) => {
-  await Promise.all([JobDescription.deleteMany({ userId: req.user.userId }), ProfileVariant.deleteMany({ userId: req.user.userId }), UsageEvent.deleteMany({ userId: req.user.userId }), AuthSession.deleteMany({ userId: req.user.userId }), AccountToken.deleteMany({ userId: req.user.userId })]);
+  await Promise.all([JobDescription.deleteMany({ userId: req.user.userId }), ProfileVariant.deleteMany({ userId: req.user.userId }), UsageEvent.deleteMany({ userId: req.user.userId }), ConnectionRequest.deleteMany({ userId: req.user.userId }), AuthSession.deleteMany({ userId: req.user.userId }), AccountToken.deleteMany({ userId: req.user.userId })]);
   await User.deleteOne({ userId: req.user.userId }); res.clearCookie('refresh_token', { path: '/api/auth' }); res.status(204).end();
 });
 

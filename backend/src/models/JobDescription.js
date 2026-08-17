@@ -31,6 +31,9 @@ const jobDescriptionSchema = new mongoose.Schema(
     },
     company: String,
     role: String,
+    jobUrl: { type: String, trim: true, maxlength: 2048 },
+    location: String,
+    source: String,
     profileVariantId: String,
     description: { type: String, required: true },
     status: {
@@ -38,6 +41,16 @@ const jobDescriptionSchema = new mongoose.Schema(
       enum: ['pending', 'processing', 'processed', 'failed'],
       default: 'pending',
     },
+    applicationStatus: {
+      type: String,
+      enum: ['saved', 'applied', 'screening', 'interviewing', 'offer', 'rejected', 'withdrawn'],
+      default: 'saved',
+      index: true,
+    },
+    appliedAt: Date,
+    nextAction: String,
+    nextActionAt: Date,
+    applicationNotes: String,
     generatedResumes: [generatedResumeSchema],
     coverLetters: [{
       content: { type: String, required: true },

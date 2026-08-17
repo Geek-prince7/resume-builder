@@ -10,6 +10,9 @@ export default function Generate() {
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [company, setCompany] = useState('');
   const [role, setRole] = useState('');
+  const [jobUrl, setJobUrl] = useState('');
+  const [location, setLocation] = useState('');
+  const [markApplied, setMarkApplied] = useState(false);
   const [description, setDescription] = useState('');
   const [generating, setGenerating] = useState(false);
   const [variants, setVariants] = useState([]);
@@ -50,7 +53,15 @@ export default function Generate() {
 
     setGenerating(true);
     try {
-      const jdRes = await createJobDescription({ company, role, description, profileVariantId });
+      const jdRes = await createJobDescription({
+        company,
+        role,
+        jobUrl: jobUrl.trim() || undefined,
+        location,
+        description,
+        profileVariantId,
+        applicationStatus: markApplied ? 'applied' : 'saved',
+      });
       const jdId = jdRes.data._id;
 
       if (backgroundGeneration && !profileVariantId) {
@@ -95,7 +106,31 @@ export default function Generate() {
                 placeholder="e.g. Senior Software Engineer"
               />
             </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Job URL <span className="text-gray-400">(optional)</span></label>
+              <input
+                type="url"
+                value={jobUrl}
+                onChange={(e) => setJobUrl(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="https://company.com/jobs/123"
+              />
+              <p className="text-xs text-gray-400 mt-1">Optional because pasted or expired postings should still be trackable.</p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Location</label>
+              <input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="e.g. Bengaluru / Remote"
+              />
+            </div>
           </div>
+          <label className="flex items-center gap-2 text-sm text-gray-700 mb-4">
+            <input type="checkbox" checked={markApplied} onChange={(e) => setMarkApplied(e.target.checked)} />
+            I have already applied for this job
+          </label>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">
               Job Description *
