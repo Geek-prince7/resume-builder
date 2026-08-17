@@ -4,6 +4,7 @@ from app.services.ai_service import parse_resume_text
 from app.logging_config import get_logger
 from app.schemas import ParseResponse
 import os
+import asyncio
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -38,6 +39,6 @@ async def parse_resume(file: UploadFile = File(...)):
     if len(text) > MAX_RESUME_TEXT_CHARS:
         text = text[:MAX_RESUME_TEXT_CHARS]
 
-    result = parse_resume_text(text)
+    result = await asyncio.to_thread(parse_resume_text, text)
     logger.info("Resume parse completed", extra={"filename": file.filename})
     return ParseResponse(data=result["data"], usage=result["usage"])

@@ -23,7 +23,7 @@ async function processGeneration(job) {
     await job.updateProgress(20);
     const response = await axios.post(`${process.env.AI_SERVICE_URL || 'http://localhost:8000'}/generate-resume`, {
       user_profile: user.toJSON(), job_description: jd.description, template_id: templateId,
-    }, { timeout: Number(process.env.AI_REQUEST_TIMEOUT_MS || 45000), headers: { 'X-Request-Id': job.id } });
+    }, { timeout: Number(process.env.AI_REQUEST_TIMEOUT_MS || 90000), headers: { 'X-Request-Id': job.id } });
     await job.updateProgress(80);
     const { content, score, usage, ats_report: atsReport } = response.data;
     await completeQuota(usageEvent, usage);
