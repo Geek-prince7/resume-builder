@@ -91,6 +91,13 @@ const userSchema = new mongoose.Schema(
     projects: [projectSchema],
     languages: [languageSchema],
     achievements: [String],
+    awards: [{ title: String, issuer: String, date: Date, description: String }],
+    publications: [{ title: String, publisher: String, date: Date, url: String, description: String }],
+    volunteerWork: [{ organization: String, role: String, startDate: Date, endDate: Date, highlights: [String] }],
+    patents: [{ title: String, number: String, date: Date, url: String }],
+    customSections: [{ title: String, items: [String] }],
+    workAuthorization: String,
+    preferredLocation: String,
     billing: {
       plan: { type: String, enum: ['free', 'starter', 'pro', 'career'], default: 'free' },
       status: {

@@ -10,6 +10,8 @@ __pycache__/
 venv/
 *.egg-info/
 uploads/
+tmp/
+output/
 
 # Env / secrets (keep .env.example committed)
 .env

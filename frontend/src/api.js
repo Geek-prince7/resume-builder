@@ -60,5 +60,7 @@ export const updateProfileVariant = (id, data) => api.put(`/profile-variants/${i
 export const deleteProfileVariant = (id) => api.delete(`/profile-variants/${id}`);
 export const generateCoverLetter = (jdId, profileVariantId) =>
   api.post(`/job-descriptions/${jdId}/cover-letter`, { profileVariantId });
+export const downloadResumePdf = (jdId, resumeId, options) =>
+  api.get(`/job-descriptions/${jdId}/resumes/${resumeId}/pdf`, { params: options, responseType: 'blob' });
 
 export default api;

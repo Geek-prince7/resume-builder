@@ -3,6 +3,8 @@ const JobDescription = require('../models/JobDescription');
 const { retryWithJitter } = require('../utils/retryWithJitter');
 const { reserveQuota, completeQuota, releaseQuota } = require('../services/quota.service');
 const ProfileVariant = require('../models/ProfileVariant');
+const { renderResumeHtml } = require('../services/resumeHtml.service');
+const { createPdf } = require('../services/pdf.service');
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 const AI_REQUEST_TIMEOUT_MS = Number(process.env.AI_REQUEST_TIMEOUT_MS || 30000);
@@ -214,4 +216,19 @@ exports.restoreGeneratedResumeRevision = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+};
+
+exports.downloadGeneratedResumePdf = async (req, res, next) => {
+  try {
+    const { jd, resume } = await findOwnedResume(req.user.userId, req.params.jdId, req.params.resumeId);
+    if (!jd) return res.status(404).json({ error: 'Job description not found' });
+    if (!resume) return res.status(404).json({ error: 'Generated resume not found' });
+    const pageSize = req.query.pageSize === 'A4' ? 'A4' : 'Letter';
+    const density = req.query.density === 'compact' ? 'compact' : 'standard';
+    const pdf = await createPdf(renderResumeHtml(resume.content, resume.templateId, { pageSize, density }), pageSize);
+    const safe = (value, fallback) => String(value || fallback).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    const filename = `${safe(resume.content?.name, 'username')}_${safe(jd.role, 'position')}_${safe(jd.company, 'company')}.pdf`;
+    res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${filename}"`, 'Content-Length': pdf.length });
+    res.send(pdf);
+  } catch (err) { next(err); }
 };

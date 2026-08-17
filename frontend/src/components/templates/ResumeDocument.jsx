@@ -222,6 +222,9 @@ const ResumeDocument = forwardRef(function ResumeDocument({ content, templateId 
             </ul>
           </section>
         )}
+
+        {content.achievements?.length > 0 && <section><h2>Achievements</h2><ul>{content.achievements.map((item, i) => <li key={i}>{item}</li>)}</ul></section>}
+        {content.languages?.length > 0 && <section><h2>Languages</h2><div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{content.languages.map((item, i) => <span key={i} className="skill-pill">{item.name}{item.proficiency ? ` (${item.proficiency.replaceAll('_', ' ')})` : ''}</span>)}</div></section>}
       </div>
     </div>
   );

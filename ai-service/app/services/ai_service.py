@@ -134,6 +134,11 @@ Return a JSON object with:
     ],
     "certifications": [{ "name": "string", "issuer": "string" }],
     "projects": [{ "name": "string", "description": "string", "technologies": ["string"] }]
+    ,"awards": [{ "title": "string", "issuer": "string", "description": "string" }]
+    ,"publications": [{ "title": "string", "publisher": "string", "description": "string" }]
+    ,"volunteerWork": [{ "organization": "string", "role": "string", "highlights": ["string"] }]
+    ,"patents": [{ "title": "string", "number": "string" }]
+    ,"customSections": [{ "title": "string", "items": ["string"] }]
   },
   "score": number (0-100, honest evidenced match percentage),
   "atsReport": {

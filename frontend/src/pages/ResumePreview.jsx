@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useReactToPrint } from 'react-to-print';
 import toast from 'react-hot-toast';
-import { getJobDescription } from '../api';
+import { downloadResumePdf, getJobDescription } from '../api';
 import ResumeDocument from '../components/templates/ResumeDocument';
 import ResumeEditor from '../components/ResumeEditor';
 import AdSlot from '../components/AdSlot';
@@ -14,6 +13,9 @@ export default function ResumePreview() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [pageSize, setPageSize] = useState('Letter');
+  const [density, setDensity] = useState('standard');
+  const [downloading, setDownloading] = useState(false);
   const resumeRef = useRef(null);
 
   const sanitize = (value, fallback) =>
@@ -30,10 +32,22 @@ export default function ResumePreview() {
     sanitize(jd?.company, 'company'),
   ].join('_');
 
-  const handlePrint = useReactToPrint({
-    contentRef: resumeRef,
-    documentTitle: pdfFileName,
-  });
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const response = await downloadResumePdf(jdId, jd.generatedResumes[activeIdx]._id, { pageSize, density });
+      const url = URL.createObjectURL(response.data);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${pdfFileName}.pdf`;
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'PDF generation failed');
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   useEffect(() => {
     if (!jdId) return;
@@ -94,6 +108,12 @@ export default function ResumePreview() {
           )}
         </div>
         <div className="flex gap-3">
+          <select value={pageSize} onChange={(e) => setPageSize(e.target.value)} className="rounded-lg border border-gray-300 px-2 text-sm">
+            <option value="Letter">Letter</option><option value="A4">A4</option>
+          </select>
+          <select value={density} onChange={(e) => setDensity(e.target.value)} className="rounded-lg border border-gray-300 px-2 text-sm">
+            <option value="standard">Standard</option><option value="compact">Compact</option>
+          </select>
           <button
             onClick={() => setEditing((value) => !value)}
             className="px-4 py-2 text-sm border border-indigo-300 rounded-lg text-indigo-700 hover:bg-indigo-50 transition-colors"
@@ -107,10 +127,11 @@ export default function ResumePreview() {
             Generate Another
           </Link>
           <button
-            onClick={handlePrint}
+            onClick={handleDownload}
+            disabled={downloading}
             className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
           >
-            Download PDF
+            {downloading ? 'Building PDF…' : 'Download PDF'}
           </button>
         </div>
       </div>

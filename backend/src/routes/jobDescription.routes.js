@@ -16,5 +16,6 @@ router.post(
   '/:jdId/resumes/:resumeId/revisions/:revisionId/restore',
   jdController.restoreGeneratedResumeRevision
 );
+router.get('/:jdId/resumes/:resumeId/pdf', jdController.downloadGeneratedResumePdf);
 
 module.exports = router;
