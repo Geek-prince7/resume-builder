@@ -9,6 +9,8 @@ router.use(authenticate);
 
 router.post('/', jdController.createJobDescription);
 router.get('/', jdController.getJobDescriptions);
+router.get('/tracker/summary', jdController.getTrackerSummary);
+router.put('/:jdId/application', jdController.updateApplication);
 router.get('/:jdId', jdController.getJobDescription);
 router.post('/:jdId/generate', jdController.generateResume);
 router.post('/:jdId/generate-async', jobQueueController.enqueue);

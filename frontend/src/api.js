@@ -64,6 +64,8 @@ export const parseResume = (file) => {
 export const createJobDescription = (data) => api.post('/job-descriptions', data);
 export const getJobDescriptions = () => api.get('/job-descriptions');
 export const getJobDescription = (jdId) => api.get(`/job-descriptions/${jdId}`);
+export const getJobTrackerSummary = () => api.get('/job-descriptions/tracker/summary');
+export const updateJobApplication = (jdId, data) => api.put(`/job-descriptions/${jdId}/application`, data);
 export const generateResume = (jdId, templateId, profileVariantId) =>
   api.post(`/job-descriptions/${jdId}/generate`, { templateId, profileVariantId });
 export const updateGeneratedResume = (jdId, resumeId, content) =>
@@ -86,5 +88,10 @@ export const downloadResumePdf = (jdId, resumeId, options) =>
   api.get(`/job-descriptions/${jdId}/resumes/${resumeId}/pdf`, { params: options, responseType: 'blob' });
 export const enqueueResumeGeneration = (jdId, templateId) => api.post(`/job-descriptions/${jdId}/generate-async`, { templateId });
 export const getGenerationJob = (jobId) => api.get(`/job-descriptions/jobs/${jobId}`);
+export const getConnections = (params) => api.get('/connections', { params });
+export const getDueConnections = () => api.get('/connections/due');
+export const createConnection = (data) => api.post('/connections', data);
+export const updateConnection = (id, data) => api.put(`/connections/${id}`, data);
+export const deleteConnection = (id) => api.delete(`/connections/${id}`);
 
 export default api;

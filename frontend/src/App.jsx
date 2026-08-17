@@ -12,6 +12,8 @@ import Pricing from './pages/Pricing';
 import Billing from './pages/Billing';
 import ProfileVariants from './pages/ProfileVariants';
 import Account from './pages/Account';
+import JobTracker from './pages/JobTracker';
+import Connections from './pages/Connections';
 import { ForgotPassword, ResetPassword, VerifyEmail } from './pages/AccountTokenPage';
 import { UserProvider, useUser } from './context/UserContext';
 
@@ -38,6 +40,8 @@ export default function App() {
               <Route path="/" element={<Dashboard />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/generate" element={<Generate />} />
+              <Route path="/jobs" element={<JobTracker />} />
+              <Route path="/connections" element={<Connections />} />
               <Route path="/resume/:jdId" element={<ResumePreview />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/billing" element={<Billing />} />
