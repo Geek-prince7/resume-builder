@@ -19,6 +19,7 @@ export default function Generate() {
   const [profileVariantId, setProfileVariantId] = useState('');
   const [includeCoverLetter, setIncludeCoverLetter] = useState(false);
   const [backgroundGeneration, setBackgroundGeneration] = useState(false);
+  const [showAllTemplates, setShowAllTemplates] = useState(false);
 
   const waitForJob = async (jobId) => {
     for (let attempt = 0; attempt < 120; attempt += 1) {
@@ -81,7 +82,7 @@ export default function Generate() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Generate Tailored Resume</h1>
 
       <form onSubmit={handleGenerate} className="space-y-6">
@@ -166,9 +167,9 @@ export default function Generate() {
         />
 
         <section className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Choose Template</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {templates.map((tpl) => (
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-lg font-semibold text-gray-900">Choose Template</h2><p className="mt-1 text-sm text-gray-500">ATS-friendly, print-tested designs for every career style.</p></div><span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">{templates.length} designs</span></div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {(showAllTemplates ? templates : templates.slice(0, 6)).map((tpl) => (
               <button
                 key={tpl.id}
                 type="button"
@@ -182,11 +183,12 @@ export default function Generate() {
                 <div className="w-full aspect-[3/4] bg-gray-50 rounded-lg mb-2.5 flex items-center justify-center overflow-hidden">
                   <TemplatePreview id={tpl.id} selected={selectedTemplate === tpl.id} />
                 </div>
-                <p className="font-semibold text-gray-900 text-sm">{tpl.name}</p>
+                <div className="flex items-center justify-between gap-2"><p className="font-semibold text-gray-900 text-sm">{tpl.name}</p><span className="rounded bg-gray-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-gray-500">{tpl.category}</span></div>
                 <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">{tpl.description}</p>
               </button>
             ))}
           </div>
+          {templates.length > 6 && <div className="mt-5 flex justify-center"><button type="button" onClick={() => setShowAllTemplates((value) => !value)} className="rounded-lg border border-gray-300 bg-white px-5 py-2 text-sm font-medium text-gray-700 hover:border-indigo-300 hover:text-indigo-700">{showAllTemplates ? 'Show fewer templates' : `Show ${templates.length - 6} more templates`}</button></div>}
         </section>
 
         <div className="flex justify-end">
@@ -213,17 +215,27 @@ function TemplatePreview({ id }) {
     minimal:   { accent: '#a1a1aa', headerBg: '#e4e4e7', pillBg: '#fafafa', pillBorder: '#e4e4e7' },
     executive: { accent: '#292524', headerBg: '#292524', pillBg: '#fafaf9', pillBorder: '#e7e5e4' },
     creative:  { accent: '#6366f1', headerBg: '#6366f1', pillBg: '#eef2ff', pillBorder: '#e0e7ff' },
+    editorial: { accent: '#8b1e3f', headerBg: '#8b1e3f', pillBg: '#fdf2f5', pillBorder: '#e5c5cf', layout: 'centered' },
+    swiss:     { accent: '#dc2626', headerBg: '#111827', pillBg: '#f9fafb', pillBorder: '#fecaca', layout: 'block' },
+    atlas:     { accent: '#b28a3d', headerBg: '#10233f', pillBg: '#f8f5ee', pillBorder: '#d8c69f', layout: 'double' },
+    noir:      { accent: '#111111', headerBg: '#111111', pillBg: '#f4f4f5', pillBorder: '#d4d4d8', layout: 'dark' },
+    ivy:       { accent: '#285943', headerBg: '#1f352d', pillBg: '#f2f7f4', pillBorder: '#b7d2c5', layout: 'centered' },
+    coastal:   { accent: '#0f766e', headerBg: '#5eead4', pillBg: '#f0fdfa', pillBorder: '#99f6e4' },
+    slate:     { accent: '#475569', headerBg: '#1e293b', pillBg: '#f1f5f9', pillBorder: '#cbd5e1', layout: 'block' },
+    aurora:    { accent: '#7c3aed', headerBg: '#22d3ee', pillBg: '#f5f3ff', pillBorder: '#ddd6fe', layout: 'gradient' },
+    monogram:  { accent: '#a16207', headerBg: '#292524', pillBg: '#fffbeb', pillBorder: '#fde68a', layout: 'side' },
+    compact:   { accent: '#334155', headerBg: '#334155', pillBg: '#f8fafc', pillBorder: '#cbd5e1', layout: 'compact' },
   };
   const c = configs[id] || configs.classic;
 
   return (
     <div
       className="w-full h-full bg-white rounded-md p-2.5 flex flex-col gap-1 transition-transform group-hover:scale-[1.02]"
-      style={{ borderTop: `3px solid ${c.accent}` }}
+      style={{ borderTop: `${c.layout === 'double' ? 5 : 3}px ${c.layout === 'double' ? 'double' : 'solid'} ${c.accent}`, borderLeft: c.layout === 'side' ? `4px solid ${c.accent}` : undefined, background: c.layout === 'gradient' ? `linear-gradient(145deg, white 70%, ${c.pillBg})` : 'white' }}
     >
-      <div className="h-2 rounded-sm w-3/5 mb-0.5" style={{ background: c.accent }} />
+      <div className={`h-2 rounded-sm mb-0.5 ${c.layout === 'centered' ? 'w-3/5 self-center' : 'w-3/5'}`} style={{ background: c.accent }} />
       <div className="h-1 bg-gray-200 rounded-sm w-4/5" />
-      <div className="h-px my-1" style={{ background: c.headerBg, opacity: 0.2 }} />
+      <div className={`${c.layout === 'dark' ? 'h-2' : c.layout === 'block' ? 'h-1.5' : 'h-px'} my-1`} style={{ background: c.headerBg, opacity: c.layout === 'dark' ? 1 : 0.35 }} />
 
       <div className="h-1 rounded-sm w-2/5 mb-0.5" style={{ background: c.accent, opacity: 0.6 }} />
       <div className="h-1 bg-gray-200 rounded-sm w-full" />
