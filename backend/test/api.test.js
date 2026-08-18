@@ -13,6 +13,9 @@ test('health and pricing endpoints are available', async () => {
   assert.equal((await request(app).get('/api/health')).status, 200);
   const pricing = await request(app).get('/api/billing/plans');
   assert.equal(pricing.status, 200); assert.equal(pricing.body.length, 4);
+  const templates = await request(app).get('/api/templates');
+  assert.equal(templates.status, 200); assert.equal(templates.body.length, 15);
+  assert.ok(templates.body.every((template) => template.category));
 });
 
 test('signup, protected profile, and quota summary work', async () => {

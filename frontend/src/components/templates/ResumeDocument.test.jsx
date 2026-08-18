@@ -9,4 +9,13 @@ describe('ResumeDocument', () => {
     expect(screen.getByText('Node.js')).toBeTruthy();
     expect(screen.queryByText('Education')).toBeNull();
   });
+
+  it('supports every premium template without losing resume content', () => {
+    const templates = ['modern', 'minimal', 'classic', 'executive', 'creative', 'editorial', 'swiss', 'atlas', 'noir', 'ivy', 'coastal', 'slate', 'aurora', 'monogram', 'compact'];
+    for (const templateId of templates) {
+      const { unmount } = render(<ResumeDocument templateId={templateId} content={{ name: `Candidate ${templateId}`, experiences: [] }} />);
+      expect(screen.getByText(`Candidate ${templateId}`)).toBeTruthy();
+      unmount();
+    }
+  });
 });
